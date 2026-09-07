@@ -2600,6 +2600,21 @@ function ln(id) {
   if (currentLang === 'sw' && m.loggerNamesSw && m.loggerNamesSw[id]) return m.loggerNamesSw[id];
   return m.loggerNames[id] || id;
 }
+// Logger name with its building appended, for charts that list loggers away
+// from the sidebar and its building sub-headings. In a region view two
+// buildings can hold the same room name - ARC UK has a "Living Room" in each -
+// so the name alone does not identify the sensor. Returns the plain name for a
+// single-building dataset, where the suffix would be noise.
+function lnb(id, grey) {
+  const m = dataset().meta;
+  const name = ln(id);
+  if (!m.isCombined || !m.loggerBuilding) return name;
+  const key = m.loggerBuilding[id];
+  if (!key) return name;
+  const b = t(key);
+  return grey ? name + ' <span style="color:#999">[' + b + ']</span>' : name + ' [' + b + ']';
+}
+
 // Logger name from a specific dataset's meta (for cross-building compare)
 function lnFrom(meta, id) {
   if (currentLang === 'sw' && meta.loggerNamesSw && meta.loggerNamesSw[id]) return meta.loggerNamesSw[id];
@@ -7883,7 +7898,7 @@ function buildStatsTable(metric, start, end) {
       st.meanNight = nightV.length ? nightV.reduce((a, b) => a + b, 0) / nightV.length : null;
     }
 
-    st.label = stripTags(ln(loggerId) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''));
+    st.label = stripTags(lnb(loggerId) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''));
     const group = extSet.has(loggerId) ? 'external' : structSet.has(loggerId) ? 'structural' : 'room';
     byGroup[group].push(st);
     all.push(st);
@@ -8207,7 +8222,7 @@ function renderBetaDifferential() {
     hasData = true;
 
     const color = m.colors[loggerId];
-    const name = ln(loggerId);
+    const name = lnb(loggerId);
     traces.push({
       x: diffX, y: diffY, type: 'scatter', mode: 'lines',
       name: name, line: {color, width: 1.4}, opacity: 0.6,
@@ -8319,7 +8334,7 @@ function renderBetaDecrement() {
     hasData = true;
     const avgFactor = factors.reduce((a, b) => a + b, 0) / factors.length;
     const source = m.loggerSources[loggerId] || '';
-    loggerNames.push(ln(loggerId) + (source ? ' (' + source + ')' : ''));
+    loggerNames.push(lnb(loggerId) + (source ? ' (' + source + ')' : ''));
     loggerDecrement.push(+avgFactor.toFixed(3));
     loggerColors.push(m.colors[loggerId] || '#1f77b4');
     loggerIds.push(loggerId);
@@ -8423,7 +8438,7 @@ function renderBetaLag() {
     hasData = true;
     const avgLag = lags.reduce((a, b) => a + b, 0) / lags.length;
     const source = m.loggerSources[loggerId] || '';
-    loggerNames.push(ln(loggerId) + (source ? ' (' + source + ')' : ''));
+    loggerNames.push(lnb(loggerId) + (source ? ' (' + source + ')' : ''));
     loggerLag.push(+avgLag.toFixed(1));
     loggerColors.push(m.colors[loggerId] || '#1f77b4');
     loggerIds.push(loggerId);
@@ -8476,7 +8491,7 @@ function renderBetaQuality() {
 
     hasData = true;
     const source = m.loggerSources[loggerId] || '';
-    const name = ln(loggerId);
+    const name = lnb(loggerId);
     const nameWithSrc = name + (source ? ' (' + source + ')' : '');
     const ts = filtered.timestamps;
     const temp = filtered.temperature;
@@ -8568,7 +8583,7 @@ function renderBetaQuality() {
     if (!filtered2) continue;
     const src = m.loggerSources[loggerId] || '';
     tickVals.push(idx);
-    tickText.push(ln(loggerId) + (src ? ' <span style="color:#aaa">(' + src + ')</span>' : ''));
+    tickText.push(lnb(loggerId, true) + (src ? ' <span style="color:#aaa">(' + src + ')</span>' : ''));
     idx++;
   }
 

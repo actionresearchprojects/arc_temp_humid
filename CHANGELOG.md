@@ -1,5 +1,8 @@
 ## Changelog
 
+### 2026-09-07 20:10:48 CST
+- **Beta charts name the building in a region view** - On ARC UK the Data Quality chart listed two rows both reading "Living Room", one per building, with nothing to tell them apart: the sidebar's building sub-headings do not reach the chart axes. A new `lnb()` helper appends the building to a logger name for combined datasets and returns the plain name otherwise, so single-building views are unchanged. Applied to Data Quality (axis labels and hover), Decrement Factor, Thermal Lag, Temperature Differential and Summary Statistics. The adaptive comfort and line charts already carried it through the legend work.
+
 ### 2026-09-07 19:45:08 CST
 - **Long-Term Mode now works on the ARC UK datasets** - The re-exported Copernicus files carry absolute temperatures rather than anomalies, so `CLIMATE_REGIONS["uk"]` is wired to `data/hist_proj_uk/` and the three UK datasets name it. The chart title reads "United Kingdom - Historic and Projected Temperatures", ERA5 runs 1940-2025 at 8.25 to 10.36 C, and the five projections fan from about 10 C in 2022 to between 9.92 and 13.50 C by 2100.
 - Checked three ways before installing, since the first export had silently been anomalies: the five model sets match the Tanzanian files exactly (9, 22, 23, 22, 27 models), confirming all five scenarios present and none duplicated; the 2100 ensemble mean rises monotonically with scenario severity; and ERA5's 10.33 C in 2022 sits 0.34 C from the projections' 9.98 C, a tighter join than the Tanzanian pair's 1.06 C.
