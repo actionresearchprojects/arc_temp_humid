@@ -3757,7 +3757,7 @@ function describeCompareDiffs() {
         if (otherCount > 0) srcParts.push(otherCount + ' other');
         // If few loggers, list names; otherwise summarise by count
         if (ids.length <= 3) {
-          parts.push(ids.map(id => ln(id)).join(', '));
+          parts.push(ids.map(id => lnb(id)).join(', '));
         } else {
           parts.push(srcParts.join(' + '));
         }
@@ -5479,13 +5479,13 @@ function downloadChartPng() {
       const selIds = [...state.selectedLoggers];
       const total = m.loggers.length;
       if (selIds.length === 0) sensorStr = '_NoSensors';
-      else if (selIds.length <= 2) sensorStr = '_' + selIds.map(id => slug(ln(id))).join('+');
+      else if (selIds.length <= 2) sensorStr = '_' + selIds.map(id => slug(stripTags(lnb(id)))).join('+');
       else if (selIds.length < total) sensorStr = `_${selIds.length}of${total}sensors`;
     } else if (state.chartType === 'comfort') {
       const selIds = [...state.selectedRoomLoggers];
       const total = (m.comfortLoggers || m.roomLoggers).length;
       if (selIds.length === 0) sensorStr = '_NoSensors';
-      else if (selIds.length <= 2) sensorStr = '_' + selIds.map(id => slug(ln(id))).join('+');
+      else if (selIds.length <= 2) sensorStr = '_' + selIds.map(id => slug(stripTags(lnb(id)))).join('+');
       else if (selIds.length < total) sensorStr = `_${selIds.length}of${total}sensors`;
     }
     // Local-time timestamp makes every filename unique - prevents browser appending " (2)", " (3)" etc.
@@ -6239,7 +6239,7 @@ function renderLineGraph() {
 
       const color = iter.colorMap[loggerId] || m.colors[loggerId];
       const isExtTT = extSet.has(loggerId) && m.loggerSources[loggerId] === 'TinyTag';
-      const name = namePrefix + ln(loggerId) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
+      const name = namePrefix + lnb(loggerId, true) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
       const source = m.loggerSources[loggerId] || '';
       const idLabel = (loggerId === 'govee' || isOpenMeteo(loggerId)) ? '' : ` · ID: ${loggerId}`;
       const freqLabel = state.historicMode
@@ -6287,7 +6287,7 @@ function renderLineGraph() {
           if (last > dataMaxMs) dataMaxMs = last;
         }
         const wbName = name + ' ' + t('wetBulbSuffix');
-        const _dispName = ln(loggerId);
+        const _dispName = lnb(loggerId);
         const _srcLabel = (source ? ' · ' + source : '') + idLabel;
         // T and RH always come from the same series; show one source line.
         // If they ever differ, fall back to two separate lines.
@@ -6583,7 +6583,7 @@ function renderHistogram() {
       const color = iter.colorMap[loggerId] || m.colors[loggerId];
       const source = m.loggerSources[loggerId] || '';
       const isExtTT = (m.externalLoggers || []).includes(loggerId) && source === 'TinyTag';
-      const name = namePrefix + ln(loggerId) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
+      const name = namePrefix + lnb(loggerId, true) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
       const lgGroup = iter.setLabel ? 'compare_s' + iter.setIndex : loggerId;
       let firstMetric = true;
 
@@ -6828,7 +6828,7 @@ function updateHistogramStats(start, end) {
     if (count === 0) continue; // no temperature readings in range
     const pct = below/count*100;
     totalBelow += below; totalAll += count;
-    roomStats.push({id: loggerId, name: ln(loggerId) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''), pct, hasGap: gaps.length > 0});
+    roomStats.push({id: loggerId, name: lnb(loggerId, true) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''), pct, hasGap: gaps.length > 0});
   }
   if (roomStats.length === 0) { histStatsPanel.classList.add('hidden'); return; }
   const overallPct = totalAll > 0 ? (totalBelow/totalAll*100).toFixed(1) : '-';
@@ -6899,7 +6899,7 @@ function renderAdaptiveComfort() {
   const seenSpans = new Map();
   const perLoggerSources = {}; // loggerId → Set of source labels
   const srcLabel = (id) => {
-    const name = ln(id);
+    const name = lnb(id);
     const type = m.loggerSources[id];
     return type ? `${name} [${type}]` : name;
   };
@@ -6949,14 +6949,14 @@ function renderAdaptiveComfort() {
       const color = iter.colorMap[loggerId] || m.colors[loggerId];
       const cSource = m.loggerSources[loggerId] || '';
       const cIdLabel = loggerId === 'govee' ? '' : ` · ID: ${loggerId}`;
-      const cName = namePrefix + ln(loggerId) + meteoSuffix(loggerId) + omniSuffix(cSource);
+      const cName = namePrefix + lnb(loggerId, true) + meteoSuffix(loggerId) + omniSuffix(cSource);
 
       if (isCompare) {
         // Merge into per-set arrays - skip expensive per-point customdata
         for (let i = 0; i < filtered.extTemp.length; i++) {
           cmpX.push(filtered.extTemp[i]);
           cmpY.push(filtered.temperature[i]);
-          cmpHover.push([ln(loggerId), toLocalString(filtered.timestamps[i]).slice(0, 16)]);
+          cmpHover.push([lnb(loggerId), toLocalString(filtered.timestamps[i]).slice(0, 16)]);
           cmpColors.push(color);
         }
       } else {
@@ -6976,7 +6976,7 @@ function renderAdaptiveComfort() {
         traces.push({x:filtered.extTemp, y:filtered.temperature, type:'scatter', mode:'markers',
           name:cName, marker:{color: ptColors, size:4, opacity:0.2},
           legendgroup:lgGroup, showlegend:false, meta:{loggerId}, customdata,
-          hovertemplate:`${ln(loggerId)}<br>${t('dateTime')}: %{customdata[0]}<br>${t('runningMean')}: %{x:.1f}°C<br>${t('roomTemp')}: %{y:.1f}°C<br>${t('extSource')}: %{customdata[1]}<br>${t('sensor')}: ${cSource}${cIdLabel}<extra></extra>`});
+          hovertemplate:`${lnb(loggerId)}<br>${t('dateTime')}: %{customdata[0]}<br>${t('runningMean')}: %{x:.1f}°C<br>${t('roomTemp')}: %{y:.1f}°C<br>${t('extSource')}: %{customdata[1]}<br>${t('sensor')}: ${cSource}${cIdLabel}<extra></extra>`});
         traces.push({x:[null], y:[null], type:'scatter', mode:'markers',
           name:cName, marker:{color, size:10, opacity:0.8, symbol:'square', line:{width:0}},
           legendgroup:lgGroup, showlegend:true, hoverinfo:'skip', meta:{loggerId}});
@@ -7435,7 +7435,7 @@ function updateComfortStats(start, end, params) {
     // Detect gaps only for a logger that is actually shown
     const gaps = detectSeriesGaps(series.timestamps, start, end);
     gapInfoMap[loggerId] = gaps;
-    roomStats.push({id: loggerId, name: ln(loggerId) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''), pct, hasGap: gaps.length > 0});
+    roomStats.push({id: loggerId, name: lnb(loggerId, true) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''), pct, hasGap: gaps.length > 0});
   }
   if (roomStats.length === 0) {
     // Readings exist but every one sits outside the standard's validated range -
@@ -7613,7 +7613,7 @@ function updatePeriodicCompleteness(start, end) {
     if (!filtered) continue;
     const gaps = detectSeriesGaps(series.timestamps, start, end);
     gapInfoMap[loggerId] = gaps;
-    roomStats.push({id: loggerId, name: ln(loggerId) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''), pct: null, hasGap: gaps.length > 0});
+    roomStats.push({id: loggerId, name: lnb(loggerId, true) + meteoSuffix(loggerId) + omniSuffix(m.loggerSources[loggerId] || ''), pct: null, hasGap: gaps.length > 0});
   }
 
   const gapCount = roomStats.filter(r => r.hasGap).length;
@@ -8098,7 +8098,7 @@ function statsExportFilename(ext) {
   const total = m.loggers.length;
   let sensorStr = '';
   if (selIds.length === 0) sensorStr = '_NoSensors';
-  else if (selIds.length <= 2) sensorStr = '_' + selIds.map(id => slug(stripTags(ln(id)))).join('+');
+  else if (selIds.length <= 2) sensorStr = '_' + selIds.map(id => slug(stripTags(lnb(id)))).join('+');
   else if (selIds.length < total) sensorStr = `_${selIds.length}of${total}sensors`;
   const _n = new Date(), _p = n => String(n).padStart(2, '0');
   const ts = `${_n.getFullYear()}${_p(_n.getMonth() + 1)}${_p(_n.getDate())}_${_p(_n.getHours())}${_p(_n.getMinutes())}`;
@@ -8222,7 +8222,11 @@ function renderBetaDifferential() {
     hasData = true;
 
     const color = m.colors[loggerId];
-    const name = lnb(loggerId);
+    // Source matters as much as building here: House 5 has a TinyTag and an
+    // Omnisense in several of the same rooms, so the room name alone names two
+    // different traces. Every other chart already carries the source suffix.
+    const src = m.loggerSources[loggerId] || '';
+    const name = lnb(loggerId) + (src ? ' (' + src + ')' : '');
     traces.push({
       x: diffX, y: diffY, type: 'scatter', mode: 'lines',
       name: name, line: {color, width: 1.4}, opacity: 0.6,
@@ -8789,7 +8793,7 @@ function renderPeriodicAverages() {
       const color = iter.colorMap[loggerId] || m.colors[loggerId];
       const source = m.loggerSources[loggerId] || '';
       const isExtTT = extSet.has(loggerId) && source === 'TinyTag';
-      const logName = namePrefix + ln(loggerId) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
+      const logName = namePrefix + lnb(loggerId, true) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
       const idLabel = (loggerId === 'govee' || isOpenMeteo(loggerId)) ? '' : ' \u00b7 ID: ' + loggerId;
       const lgGroup = iter.setLabel ? 'compare_s' + iter.setIndex : loggerId;
       let firstMetric = true;
@@ -8817,7 +8821,7 @@ function renderPeriodicAverages() {
 
         const unit = metric === 'temperature' ? '\u00b0C' : '%RH';
         const metricName = metric === 'temperature' ? 'Avg temp' : 'Avg humidity';
-        const hoverTpl = namePrefix + ln(loggerId) + '<br>%{text}<br>' + metricName + ': %{y:.1f}' + unit + '<br>' + t('source') + ': ' + source + idLabel + '<extra></extra>';
+        const hoverTpl = namePrefix + lnb(loggerId) + '<br>%{text}<br>' + metricName + ': %{y:.1f}' + unit + '<br>' + t('source') + ': ' + source + idLabel + '<extra></extra>';
         const trace = {
           x, y, text: txt, type: 'scatter',
           name: logName + meteoSuffix(loggerId) + omniSuffix(source) + (firstMetric ? _wbAnnotation : ''),
@@ -8840,7 +8844,7 @@ function renderPeriodicAverages() {
       // Data quality warning: >50% of categories with single-point averages
       const singlePct = nCats > 0 ? singlePointCats / nCats * 100 : 0;
       if (singlePct > 50) {
-        warningInfos.push({loggerId, name: ln(loggerId), metric, pct: singlePct});
+        warningInfos.push({loggerId, name: lnb(loggerId), metric, pct: singlePct});
       }
     }
       // Wet bulb periodic average trace
@@ -8853,7 +8857,7 @@ function renderPeriodicAverages() {
           else wbYArr.push(null);
         }
         if (wbAny) {
-          const wbName = namePrefix + ln(loggerId) + ' ' + t('wetBulbSuffix');
+          const wbName = namePrefix + lnb(loggerId, true) + ' ' + t('wetBulbSuffix');
           traces.push({
             x: wbX, y: wbYArr, text: wbTxt, type: 'scatter', mode: 'lines+markers',
             name: wbName, legendgroup: lgGroup, showlegend: false,

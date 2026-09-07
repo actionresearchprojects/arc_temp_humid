@@ -1,5 +1,10 @@
 ## Changelog
 
+### 2026-09-08 00:12:42 CST
+- **Every logger label outside the sidebar now names its building** - Not just the beta charts. `lnb()` is applied to the line graph, histogram, adaptive comfort and periodic averages trace names, their hover templates, the wet bulb series, the stats boxes under each chart, the periodic completeness warnings, the advanced-filter description and the PNG export filenames. Single-building datasets are unchanged, since the suffix would be noise there.
+- **Fix: the Temperature Differential chart could not tell two sensors in one room apart** - It named traces from the logger name alone, with no source suffix, so House 5's TinyTag and Omnisense "Living Room" produced two identically labelled lines. This was true of ARC Tanzania and of House 5 on its own, so it predates the regions work. It now carries the source like every other chart.
+- **Audited all nine chart types across three datasets for duplicate labels** - Driving each chart in a headless browser and collecting its rendered legend, axis categories or table rows. Before: five charts carried duplicates. After: none. Summary Statistics repeats a logger between its Temperature and Humidity tables, which is one table per metric and correct.
+
 ### 2026-09-07 20:10:48 CST
 - **Beta charts name the building in a region view** - On ARC UK the Data Quality chart listed two rows both reading "Living Room", one per building, with nothing to tell them apart: the sidebar's building sub-headings do not reach the chart axes. A new `lnb()` helper appends the building to a logger name for combined datasets and returns the plain name otherwise, so single-building views are unchanged. Applied to Data Quality (axis labels and hover), Decrement Factor, Thermal Lag, Temperature Differential and Summary Statistics. The adaptive comfort and line charts already carried it through the legend work.
 
