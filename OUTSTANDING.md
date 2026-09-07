@@ -135,7 +135,37 @@ containing a House 5 sensor alongside the Grove and Holywell ones.
 To re-test at any point: Actions -> Debug Omnisense fetch -> Run workflow ->
 site `uk`. It downloads and discards, committing nothing.
 
-## 5. Known limitation, not a task
+## 5. Optional: Copernicus climate data for the UK
+
+Long-Term Mode overlays Copernicus ERA5 historic and CMIP6 SSP projection
+series. Those are drawn for **one user-defined region** in the Copernicus
+Interactive Climate Atlas, and the set in `data/hist_proj/` is Tanzanian - its
+ERA5 series averages about 25 C, which is meaningless over Herefordshire.
+
+Long-Term Mode is therefore **hidden entirely on the UK datasets** rather than
+showing another region's projections under a UK building. `CLIMATE_REGIONS` in
+`build.py` maps a region key to a folder and a display label, and each dataset
+names the region that applies to it; a dataset with no region has no Long-Term
+Mode.
+
+To add the UK:
+
+1. In the Copernicus Interactive Climate Atlas, draw the region and export the
+   ERA5 historic and the CMIP6 SSP timeseries as CSV.
+2. Put them in a new folder, e.g. `data/hist_proj_uk/`, with the same filenames
+   (`t-ERA5_timeseries_historic.csv`, `t-CMIP6_timeseries_SSP*.csv`).
+3. Add a `CLIMATE_REGIONS` entry pointing at it with a display label.
+4. Set `"climate_region"` on the UK datasets.
+
+Grove and Holywell are about 150 km apart, so strictly they warrant separate
+regions, in the same way their Open-Meteo feeds do. One "ARC UK" region drawn
+around both would be a reasonable simplification for climate projections, whose
+grid is far coarser than weather - but that is a judgement worth making
+deliberately rather than by default.
+
+---
+
+## 6. Known limitation, not a task
 
 ASHRAE 55 Section 5.4.1(a) requires that no heating is in operation. Nothing at
 any site records heating status, and nothing in a temperature and humidity trace

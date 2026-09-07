@@ -161,6 +161,18 @@ THRESHOLD_UK = None
 # ASHRAE 55-2020 Section 5.4.1(d): the adaptive method is only validated for a
 # prevailing mean outdoor temperature in this range. Mkuranga sits inside it
 # year-round; UK winters do not.
+# Copernicus ERA5 / CMIP6 series for Long-Term Mode. These are drawn for one
+# user-defined region in the Copernicus Interactive Climate Atlas, so they are
+# location-specific and must never be shown under a building somewhere else -
+# the Tanzanian series average about 25 C, which is nonsense over Herefordshire.
+# A dataset with no entry here simply has no Long-Term Mode.
+#
+# To add the UK: draw the region in the Climate Atlas, export the ERA5 and CMIP6
+# SSP timeseries as CSV into a new folder, and add an entry below.
+CLIMATE_REGIONS = {
+    "tz": {"folder": DATA_FOLDER / "hist_proj", "label": "Dar es Salaam"},
+}
+
 COMFORT_TPMA_MIN = 10.0
 COMFORT_TPMA_MAX = 33.5
 
@@ -220,6 +232,7 @@ DATASETS = {
         "timezone": "Africa/Dar_es_Salaam",
         "tz_label": "EAT, UTC+03:00",
         "season_scheme": "tz",
+        "climate_region": "tz",
         "openmeteo_feed": "tz",
         "comfort_model": COMFORT_MODEL_TZ,
         "heating_unverified": HEATING_UNVERIFIED_TZ,
@@ -233,6 +246,7 @@ DATASETS = {
         "timezone": "Africa/Dar_es_Salaam",
         "tz_label": "EAT, UTC+03:00",
         "season_scheme": "tz",
+        "climate_region": "tz",
         "openmeteo_feed": "tz",
         "comfort_model": COMFORT_MODEL_TZ,
         "heating_unverified": HEATING_UNVERIFIED_TZ,
@@ -300,6 +314,7 @@ DATASETS = {
         "timezone": "Africa/Dar_es_Salaam",
         "tz_label": "EAT, UTC+03:00",
         "season_scheme": "tz",
+        "climate_region": "tz",
         "openmeteo_feed": "tz",
         "comfort_model": COMFORT_MODEL_TZ,
         "heating_unverified": HEATING_UNVERIFIED_TZ,
@@ -725,15 +740,15 @@ def load_logger_excel(path, skip_rows):
         return pd.DataFrame()
 
 
-def load_copernicus_climate_data():
-    """Load Copernicus ERA5 historic + CMIP6 SSP projection CSVs from data/hist_proj/."""
-    hist_folder = DATA_FOLDER / "hist_proj"
+def load_copernicus_climate_data(region):
+    """Load one region's Copernicus ERA5 historic + CMIP6 SSP projection CSVs."""
+    hist_folder = CLIMATE_REGIONS[region]["folder"]
     era5_path = hist_folder / "t-ERA5_timeseries_historic.csv"
     if not era5_path.exists():
-        print("  No data/hist_proj/t-ERA5_timeseries_historic.csv found, skipping climate data")
+        print(f"  No {era5_path} found, skipping climate data for '{region}'")
         return None
 
-    result = {"series": []}
+    result = {"label": CLIMATE_REGIONS[region]["label"], "series": []}
 
     # Load ERA5 historic
     df = pd.read_csv(era5_path, comment="#")
@@ -1421,6 +1436,7 @@ def build_dataset_json(key, df, logger_overrides=None, member_data=None):
             "timezone":     cfg.get("timezone", "Africa/Dar_es_Salaam"),
             "tzLabel":      cfg.get("tz_label", "EAT, UTC+03:00"),
             "seasonScheme": cfg.get("season_scheme", "tz"),
+            "climateRegion": cfg.get("climate_region"),
             "defaultOff":   [l for l in cfg.get("default_off", []) if l in unique_loggers],
             "comfortModel": cfg.get("comfort_model", COMFORT_MODEL_TZ),
             "threshold":    cfg.get("threshold", THRESHOLD_TZ),
@@ -2017,7 +2033,16 @@ hr.divider { border: none; border-top: 1px solid #eee; margin: 2px 0; }
 
 <script>
 const ALL_DATA = __DATA__;
-const HISTORIC = __HISTORIC__;
+const HISTORIC_BY_REGION = __HISTORIC__;
+// Copernicus series are drawn for one geographic region, so they belong to the
+// dataset on screen rather than to the page. A dataset with no climate region
+// has no Long-Term Mode at all - showing another region's projections under it
+// would be worse than showing none.
+function historicData() {
+  const d = (typeof ALL_DATA !== 'undefined' && typeof dataset === 'function') ? dataset() : null;
+  const r = d && d.meta && d.meta.climateRegion;
+  return (r && HISTORIC_BY_REGION[r]) || null;
+}
 const FETCH_TIMES = __FETCH_TIMES__;
 const DATA_FRESHNESS = __DATA_FRESHNESS__;
 const LOGO_B64 = '__LOGO_B64__';
@@ -2314,6 +2339,7 @@ const I18N = {
     extDataWarningPost: '. Update <code>open-meteo</code> CSV to see adaptive comfort for recent dates.',
     // Long-term historic note
     longTermNotePre: 'Long-term historic and projected future data generated from',
+    historicProjectedTitle: 'Historic and Projected Temperatures',
     longTermNotePost: 'information 2026.',
     // Substrat filter labels
     filterBy: 'Filter by',
@@ -2538,6 +2564,7 @@ const I18N = {
     extDataWarningPre: 'Data ya joto la nje ya Open-Meteo inafika hadi',
     extDataWarningPost: '. Sasisha CSV ya <code>open-meteo</code> kuona faraja ya kubadilika kwa tarehe za hivi karibuni.',
     longTermNotePre: 'Data ya kihistoria ya muda mrefu na makadirio ya baadaye yamezalishwa kutoka',
+    historicProjectedTitle: 'Joto la Kihistoria na Makadirio',
     longTermNotePost: 'taarifa 2026.',
     filterBy: 'Chuja kwa',
     optNone: 'Hakuna',
@@ -4212,9 +4239,17 @@ function loadDataset(key) {
   }
 
   // Show historic section if data available
-  document.getElementById('historic-section').style.display = HISTORIC ? '' : 'none';
+  document.getElementById('historic-section').style.display = historicData() ? '' : 'none';
 
   applyRegionDefaults();
+
+  // Long-Term Mode belongs to datasets that have climate data for their own
+  // region. Switching to one that does not must leave the mode, not carry it.
+  if (state.historicMode && !historicData()) {
+    const hm = document.getElementById('cb-historic-mode');
+    if (hm && hm.checked) { hm.checked = false; hm.dispatchEvent(new Event('change', {bubbles: true})); }
+    else { state.historicMode = false; }
+  }
 
   // Rebuild time dropdowns
   const ysel = document.getElementById('year-select');
@@ -4362,8 +4397,8 @@ function resetLineDefaults() {
     }
     // Reset historic series to all checked
     state.selectedHistoricSeries = new Set();
-    if (HISTORIC) {
-      HISTORIC.series.forEach(s => state.selectedHistoricSeries.add(s.id));
+    if (historicData()) {
+      historicData().series.forEach(s => state.selectedHistoricSeries.add(s.id));
     }
     document.getElementById('historic-series-checkboxes').querySelectorAll('input[type=checkbox]').forEach(cb => {
       cb.checked = true;
@@ -4968,7 +5003,7 @@ function setupStaticListeners() {
       document.getElementById('line-controls').classList.remove('hidden');
       document.getElementById('line-options-section').style.display = 'none';
       document.getElementById('line-options-divider').style.display = 'none';
-      if (HISTORIC) document.getElementById('historic-section').style.display = 'none';
+      if (historicData()) document.getElementById('historic-section').style.display = 'none';
       document.getElementById('humidity-label').style.display = isStats ? '' : 'none';
       document.getElementById('cb-threshold').parentElement.style.display = 'none';
       document.getElementById('cb-seasons').parentElement.style.display = 'none';
@@ -5016,7 +5051,7 @@ function setupStaticListeners() {
     } else if (isPeriodic) {
       document.getElementById('line-options-section').style.display = state.periodCycle === 'year' ? '' : 'none';
       document.getElementById('line-options-divider').style.display = state.periodCycle === 'year' ? '' : 'none';
-      if (HISTORIC) document.getElementById('historic-section').style.display = 'none';
+      if (historicData()) document.getElementById('historic-section').style.display = 'none';
       document.getElementById('humidity-label').style.display = '';
       document.getElementById('cb-threshold').parentElement.style.display = 'none';
       document.getElementById('cb-seasons').parentElement.style.display = state.periodCycle === 'year' ? '' : 'none';
@@ -5026,7 +5061,7 @@ function setupStaticListeners() {
       document.getElementById('line-options-divider').style.display = '';
       document.getElementById('cb-threshold').parentElement.style.display = thresholdBand() ? '' : 'none';
       document.getElementById('cb-seasons').parentElement.style.display = 'none';
-      if (HISTORIC) document.getElementById('historic-section').style.display = '';
+      if (historicData()) document.getElementById('historic-section').style.display = '';
       if (state.historicMode) {
         // Historic mode on: keep current state, ensure series checkboxes visible
         document.getElementById('humidity-label').style.display = 'none';
@@ -5040,7 +5075,7 @@ function setupStaticListeners() {
       document.getElementById('cb-seasons').parentElement.style.display = '';
       document.getElementById('line-options-section').style.display = '';
       document.getElementById('line-options-divider').style.display = '';
-      if (HISTORIC) document.getElementById('historic-section').style.display = '';
+      if (historicData()) document.getElementById('historic-section').style.display = '';
       // Re-apply historic mode visual effects now that we're back on line graph
       if (state.historicMode) {
         document.getElementById('cb-humidity').checked = false;
@@ -5257,21 +5292,21 @@ function setupStaticListeners() {
     ysel.innerHTML = '';
     const m = dataset().meta;
     let years = [...m.availableYears];
-    if (HISTORIC && state.historicMode) {
+    if (historicData() && state.historicMode) {
       const allYears = new Set(years);
-      HISTORIC.series.forEach(s => s.timestamps.forEach(t => allYears.add(parseInt(t))));
+      historicData().series.forEach(s => s.timestamps.forEach(t => allYears.add(parseInt(t))));
       years = [...allYears].sort((a,b) => a - b);
     }
     years.forEach(y => ysel.add(new Option(y, y)));
     if (years.includes(parseInt(prev))) ysel.value = prev;
     else if (years.length) { ysel.value = years[years.length-1]; state.selectedYear = years[years.length-1]; }
   }
-  // Build historic series checkboxes from HISTORIC data
+  // Build historic series checkboxes from historicData() data
   function buildHistoricSeriesCheckboxes() {
     const div = document.getElementById('historic-series-checkboxes');
     div.innerHTML = '';
-    if (!HISTORIC) return;
-    HISTORIC.series.forEach(s => {
+    if (!historicData()) return;
+    historicData().series.forEach(s => {
       state.selectedHistoricSeries.add(s.id);
       const color = CLIMATE_COLORS[s.id] || '#999';
       const lbl = document.createElement('label');
@@ -5450,7 +5485,8 @@ function downloadChartPng() {
     function injectSVGTitle(doc, svgW) {
       const infolayer = doc.querySelector('.infolayer');
       const ns = 'http://www.w3.org/2000/svg';
-      const marginT = (_currentLayout.margin && _currentLayout.margin.t) || 50;
+      const marginT = _titleMarginOverride
+        || (_currentLayout.margin && _currentLayout.margin.t) || 50;
       const fontSize = sm ? 12 : 14;
       function makeTxt(fill, stroke, sw) {
         const t = doc.createElementNS(ns, 'text');
@@ -5536,8 +5572,20 @@ function downloadChartPng() {
 
     setTimeout(() => {
     if (state.chartType === 'line' || state.chartType === 'periodic') {
-      // No relayout for line/periodic graph - inject title + watermark directly into SVG.
-      Plotly.toImage('chart', {format: 'svg', width: W, height: H}).then(svgDataUrl => {
+      // The title is injected straight into the SVG, centred in the top margin,
+      // so that margin has to be tall enough to hold it. It usually is, because
+      // season labels reserve 85px - but Long-Term Mode turns those off, and so
+      // does any window containing no season boundary, leaving 10px and a title
+      // clipped by the top edge. Widen the margin just for the capture in that
+      // case, then put it back.
+      const titleFont = sm ? 12 : 14;
+      const minTopForTitle = titleFont * 2 + 8;
+      const origMarginTLine = (_currentLayout.margin && _currentLayout.margin.t) || 50;
+      const needsRoom = origMarginTLine < minTopForTitle;
+      if (needsRoom) _titleMarginOverride = minTopForTitle;
+      (needsRoom ? Plotly.relayout('chart', {'margin.t': minTopForTitle}) : Promise.resolve())
+      .then(() => Plotly.toImage('chart', {format: 'svg', width: W, height: H}))
+      .then(svgDataUrl => {
         const doc = new DOMParser().parseFromString(parseSVGDataUrl(svgDataUrl), 'image/svg+xml');
         injectSVGTitle(doc, W);
         injectLegendIDCodes(doc);
@@ -5577,7 +5625,15 @@ function downloadChartPng() {
         }
         injectSVGWatermark(doc, W, finalH, 1.0);
         return svgToCanvas(new XMLSerializer().serializeToString(doc), W, finalH, scale);
-      }).then(canvasToPNG).catch(dlDone);
+      }).then(canvas => {
+        _titleMarginOverride = 0;
+        if (needsRoom) Plotly.relayout('chart', {'margin.t': origMarginTLine});
+        canvasToPNG(canvas);
+      }).catch(e => {
+        _titleMarginOverride = 0;
+        if (needsRoom) Plotly.relayout('chart', {'margin.t': origMarginTLine});
+        dlDone();
+      });
     } else {
       // Histogram / adaptive comfort: add title via relayout, capture as SVG,
       // inject watermark into SVG DOM, render to canvas, restore.
@@ -5689,8 +5745,8 @@ function downloadChartPng() {
 function getTimeRange() {
   let {min, max} = dataset().meta.dateRange;
   // Expand range when historic mode is active
-  if (HISTORIC && state.historicMode) {
-    HISTORIC.series.forEach(s => {
+  if (historicData() && state.historicMode) {
+    historicData().series.forEach(s => {
       const sMin = new Date(s.timestamps[0]).getTime();
       const sMax = new Date(s.timestamps[s.timestamps.length-1]).getTime();
       if (sMin < min) min = sMin;
@@ -6259,10 +6315,10 @@ function renderLineGraph() {
   if (dataMinMs === Infinity) { dataMinMs = start; dataMaxMs = end; }
 
   // Expand bounds for historic/climate data before drawing threshold/season lines
-  const showingHistoric = HISTORIC && state.historicMode;
+  const showingHistoric = historicData() && state.historicMode;
   const historicFiltered = [];
   if (showingHistoric) {
-    HISTORIC.series.forEach(s => {
+    historicData().series.forEach(s => {
       const allDates = s.timestamps.map(t => new Date(t));
       const idx = [];
       for (let i = 0; i < allDates.length; i++) {
@@ -6356,8 +6412,9 @@ function renderLineGraph() {
   const dsl = dsLabel();
   const sm = window.innerWidth < 680;
 
-  const plotTitle = state.historicMode
-    ? 'Dar es Salaam - Historic and Projected Temperatures'
+  const _hist = historicData();
+  const plotTitle = (state.historicMode && _hist)
+    ? `${_hist.label} - ${t('historicProjectedTitle')}`
     : `${dsl} - ${chartTitle}`;
   const barTitle = plotTitle.replace(/&amp;/g, '&');
   return {traces, layout: {
@@ -6520,8 +6577,8 @@ function renderHistogram() {
   }
 
   // Climate series traces (only when historic mode is active and temperature metric selected)
-  if (HISTORIC && state.historicMode && state.selectedMetrics.has('temperature')) {
-    HISTORIC.series.forEach(s => {
+  if (historicData() && state.historicMode && state.selectedMetrics.has('temperature')) {
+    historicData().series.forEach(s => {
       if (!state.selectedHistoricSeries.has(s.id)) return;
       const values = s.values.filter(v => v != null);
       if (values.length === 0) return;
@@ -9096,6 +9153,10 @@ let _lastRenderKey = null;
 let _zoomReset = false; // set true by double-click or chart switch to allow autorange
 let _currentTitle = '';
 let _currentLayout = {};
+// Set only while a PNG capture has temporarily widened the top margin, so the
+// injected title is centred in the margin actually used for the capture rather
+// than the one the live chart is showing.
+let _titleMarginOverride = 0;
 // Table data from the most recent Summary Statistics render, kept for CSV export.
 let _statsTables = [];
 
@@ -9709,8 +9770,12 @@ def main():
 
 
     print("Loading climate data...")
-    historic = load_copernicus_climate_data()
-    historic_str = json.dumps(historic, separators=(',', ':')) if historic else 'null'
+    historic = {}
+    for region in CLIMATE_REGIONS:
+        data = load_copernicus_climate_data(region)
+        if data:
+            historic[region] = data
+    historic_str = json.dumps(historic, separators=(',', ':'))
 
     # Determine fetch timestamps from filenames
     fetch_times = {}
