@@ -166,45 +166,35 @@ gateway. Worth checking on site.
 
 ---
 
-## 7. Finish the UK Copernicus climate data
+## 7. UK Copernicus climate data - DONE
 
-`data/hist_proj_uk/` exists with `t-ERA5_timeseries_historic.csv` in place and
-correct - absolute annual mean temperature for the United Kingdom region,
-1940-2025, around 8-10 C.
+Long-Term Mode now works on the UK datasets, with the United Kingdom region's
+own ERA5 history and five CMIP6 projections. `CLIMATE_REGIONS["uk"]` points at
+`data/hist_proj_uk/` and the three UK datasets name it.
 
-**The five CMIP6 projection files are still needed.** The exports supplied on
-7 September were produced with the variable set to **"Change (relative to
-1850-1900)"**, so they hold anomalies of roughly -1.4 to +3.9 K rather than
-absolute temperatures. At 2100 under SSP2-4.5 the supplied file reads 1.82
-where the Tanzanian equivalent reads 28.24 C. Plotted against the ERA5 line at
-around 9 C they would sit far below it and appear to show the UK cooling.
+The first export could not be used - it was produced with the variable on
+"Change (relative to 1850-1900)" and so carried anomalies rather than
+temperatures. The replacement is on "Value" and was checked three ways before
+being installed:
 
-Re-export the five scenarios with the variable on **"Climatology"**, the setting
-the Tanzanian files used, and save them in `data/hist_proj_uk/` as:
-
-```
-t-CMIP6_timeseries_SSP1-1.9.csv
-t-CMIP6_timeseries_SSP1-2.6.csv
-t-CMIP6_timeseries_SSP2-4.5.csv
-t-CMIP6_timeseries_SSP3-7.0.csv
-t-CMIP6_timeseries_SSP5-8.5.csv
-```
-
-The filenames matter: `build.py` globs `t-CMIP6_timeseries_SSP*.csv` and takes
-the scenario name from the filename. The five files supplied were confirmed to
-be those five scenarios and nothing was duplicated - their model sets match the
-Tanzanian files exactly, 9, 22, 23, 22 and 27 models respectively.
-
-Once they are in, the remaining work is a `CLIMATE_REGIONS["uk"]` entry and
-`"climate_region": "uk"` on the three UK datasets.
+- **Scenario identity.** The five model sets match the Tanzanian files exactly
+  (9, 22, 23, 22, 27 models), so the files are SSP1-1.9, SSP1-2.6, SSP2-4.5,
+  SSP3-7.0 and SSP5-8.5, none duplicated or missing.
+- **Physical ordering.** The 2100 ensemble mean rises monotonically with
+  scenario severity: 9.92, 10.27, 11.28, 12.43, 13.50 C.
+- **Continuity with observation.** ERA5 reads 10.33 C in 2022 against the
+  projections' 9.98 C, a gap of 0.34 C - tighter than the Tanzanian pair's
+  1.06 C, so history and projection join cleanly on the chart.
 
 ### On the region
 
-These were drawn for the whole **United Kingdom**, not a free-draw region around
-the buildings as Tanzania's were. That is defensible for climate projections,
-whose grids are far coarser than weather, and it settles the earlier question of
-one region or two: one covers both Grove and Holywell. Worth being a deliberate
-choice rather than an accident of the export.
+Drawn for the whole **United Kingdom**, not a free-draw region around the
+buildings as Tanzania's was. That is defensible for climate projections, whose
+grids are far coarser than weather, and it settles the earlier question of one
+region or two: one covers both Grove and Holywell. Worth being a deliberate
+choice rather than an accident of the export - if separate regions for Hereford
+and Criccieth are wanted, it is a second folder and a second `CLIMATE_REGIONS`
+entry.
 
 ---
 

@@ -170,7 +170,12 @@ THRESHOLD_UK = None
 # To add the UK: draw the region in the Climate Atlas, export the ERA5 and CMIP6
 # SSP timeseries as CSV into a new folder, and add an entry below.
 CLIMATE_REGIONS = {
-    "tz": {"folder": DATA_FOLDER / "hist_proj", "label": "Dar es Salaam"},
+    "tz": {"folder": DATA_FOLDER / "hist_proj",    "label": "Dar es Salaam"},
+    # Drawn for the whole United Kingdom rather than a free-draw region around
+    # the buildings. Defensible for climate projections, whose grids are far
+    # coarser than weather, and it means one region serves both Grove Cottage
+    # and Holywell Barn despite the 150 km between them.
+    "uk": {"folder": DATA_FOLDER / "hist_proj_uk", "label": "United Kingdom"},
 }
 
 COMFORT_TPMA_MIN = 10.0
@@ -340,6 +345,7 @@ DATASETS = {
         "timezone": "Europe/London",
         "tz_label": "GMT/BST",
         "season_scheme": "uk",
+        "climate_region": "uk",
         "openmeteo_feeds": ["grove", "holywell"],
         "default_off": ["Grove Historical (Open-Meteo)", "Grove Forecast (Open-Meteo)",
                         "Holywell Historical (Open-Meteo)", "Holywell Forecast (Open-Meteo)"],
@@ -358,6 +364,7 @@ DATASETS = {
         "timezone": "Europe/London",
         "tz_label": "GMT/BST",
         "season_scheme": "uk",
+        "climate_region": "uk",
         "openmeteo_feed": "grove",
         # Available but unticked: the on-site sensors are the subject,
         # and the model series are reference and running-mean fallback.
@@ -384,6 +391,7 @@ DATASETS = {
         "timezone": "Europe/London",
         "tz_label": "GMT/BST",
         "season_scheme": "uk",
+        "climate_region": "uk",
         "openmeteo_feed": "holywell",
         # Available but unticked: the on-site sensors are the subject,
         # and the model series are reference and running-mean fallback.
