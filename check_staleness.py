@@ -45,18 +45,28 @@ FETCH_THRESHOLD_H = 36  # all sources: flag if action hasn't refreshed in >36h
 DATA_THRESHOLD_H = {
     "omnisense_weather":    24,  # flag if no new sensor reading in over a day
     "omnisense_temp_humid": 24,  # flag if no new sensor reading in over a day
+    "omnisense_uk":         24,  # ARC UK room temp/humidity, same expectation
     "openmeteo_hist": 36,        # historical goes to yesterday; 36h gives margin
     "openmeteo_fc":   None,      # forecast always extends into the future; no data check
+    "openmeteo_grove_hist":    36,
+    "openmeteo_grove_fc":      None,
+    "openmeteo_holywell_hist": 36,
+    "openmeteo_holywell_fc":   None,
     "enso":           120 * 24,  # NOAA ONI is monthly with up to ~3 month lag; 120d tolerates normal lag, fires only on a genuine stall
     "iod":            14 * 24,   # BoM IOD is weekly
     "mjo":             7 * 24,   # NOAA MJO ROMI updated daily with short lag
 }
 
 LABELS = {
-    "omnisense_weather":    "Omnisense: weather station",
-    "omnisense_temp_humid": "Omnisense: room temp/humidity",
-    "openmeteo_hist": "Open-Meteo historical",
-    "openmeteo_fc":   "Open-Meteo forecast",
+    "omnisense_weather":    "Omnisense: weather station (Tanzania)",
+    "omnisense_temp_humid": "Omnisense: room temp/humidity (Tanzania)",
+    "omnisense_uk":         "Omnisense: room temp/humidity (UK)",
+    "openmeteo_hist": "Open-Meteo historical (Tanzania)",
+    "openmeteo_fc":   "Open-Meteo forecast (Tanzania)",
+    "openmeteo_grove_hist":    "Open-Meteo historical (Grove Cottage)",
+    "openmeteo_grove_fc":      "Open-Meteo forecast (Grove Cottage)",
+    "openmeteo_holywell_hist": "Open-Meteo historical (Holywell Barn)",
+    "openmeteo_holywell_fc":   "Open-Meteo forecast (Holywell Barn)",
     "enso":           "ENSO ONI (NOAA PSL)",
     "iod":            "IOD DMI (Bureau of Meteorology)",
     "mjo":            "MJO ROMI (NOAA PSL)",
@@ -67,6 +77,8 @@ NOTES = {
     "iod":  "Weekly index from BoM; up to 14 days lag is normal",
     "mjo":  "Daily index; NOAA typically lags 2-5 days",
     "openmeteo_fc": "Latest data shows forecast horizon (~16 days out); fetch date is the freshness signal",
+    "openmeteo_grove_fc": "Latest data shows forecast horizon (~16 days out); fetch date is the freshness signal",
+    "openmeteo_holywell_fc": "Latest data shows forecast horizon (~16 days out); fetch date is the freshness signal",
 }
 
 STATUS_PAGE = "https://actionresearchprojects.net/status"
@@ -84,6 +96,17 @@ ROOM_TH_SENSOR_IDS = {
     "32760048",
 }
 # Friendly names for the drill-down view, subset of build.py's LOGGER_NAMES.
+# ARC UK draws from a separate Omnisense site whose export also carries sensors
+# for buildings this dashboard does not cover; only these four are checked.
+# Keep in sync with GROVE_SENSORS / HOLYWELL_SENSORS in build.py.
+UK_SENSOR_IDS = {"1C290049", "169502D1", "19550131", "0E3C12EC"}
+UK_LOGGER_NAMES = {
+    "1C290049": "Grove Cottage: External Ambient",
+    "169502D1": "Grove Cottage: Living Room (No. 57)",
+    "19550131": "Holywell Barn: External Ambient (full shade)",
+    "0E3C12EC": "Holywell Barn: Living Room",
+}
+
 ROOM_TH_LOGGER_NAMES = {
     "320E02D1": "Weather Station T&RH",
     "327601CB": "Bedroom 2",
@@ -324,15 +347,43 @@ def run():
         ))
     sources.append(th_entry)
 
-    # Open-Meteo - timestamped filenames → fetch date available
-    hist_files = sorted(glob.glob(os.path.join(DATA, "openmeteo", "historical_*.csv")))
-    sources.append(entry("openmeteo_hist",
-        fetch_dt=file_date_from_glob("openmeteo/historical_*.csv"),
-        data_dt=latest_iso_in_file(hist_files[-1] if hist_files else None, col=0)))
-    fc_files = sorted(glob.glob(os.path.join(DATA, "openmeteo", "forecast_*.csv")))
-    sources.append(entry("openmeteo_fc",
-        fetch_dt=file_date_from_glob("openmeteo/forecast_*.csv"),
-        data_dt=latest_iso_in_file(fc_files[-1] if fc_files else None, col=0)))
+    # Omnisense, ARC UK - separate site, separate export, same shape
+    uk_files = sorted(glob.glob(os.path.join(DATA, "omnisense_uk", "omnisense_uk_*.csv")))
+    uk_latest = uk_files[-1] if uk_files else None
+    uk_entry = entry("omnisense_uk",
+        fetch_dt=file_date_from_glob("omnisense_uk/omnisense_uk_*.csv"),
+        data_dt=latest_iso_in_file(uk_latest, col=2,
+                                   match_col=0, match_vals=UK_SENSOR_IDS))
+    uk_per_sensor = latest_iso_per_id_in_file(uk_latest, col=2, id_col=0, ids=UK_SENSOR_IDS)
+    uk_threshold = DATA_THRESHOLD_H["omnisense_uk"]
+    uk_entry["series"] = []
+    for sid in sorted(UK_SENSOR_IDS, key=lambda i: UK_LOGGER_NAMES.get(i, i)):
+        dt = uk_per_sensor.get(sid)
+        status, age = age_status(dt, uk_threshold)
+        uk_entry["series"].append(dict(
+            id=sid,
+            label=UK_LOGGER_NAMES.get(sid, sid),
+            data_date=dt.strftime("%Y-%m-%d %H:%M UTC") if dt else None,
+            data_age_hours=age,
+            data_status=status,
+        ))
+    sources.append(uk_entry)
+
+    # Open-Meteo - timestamped filenames → fetch date available. One feed per
+    # location; each is fetched and committed separately, so each is checked.
+    for key, folder in (("openmeteo", "openmeteo"),
+                        ("openmeteo_grove", "openmeteo_grove"),
+                        ("openmeteo_holywell", "openmeteo_holywell")):
+        prefix = "openmeteo_hist" if key == "openmeteo" else key + "_hist"
+        fc_key = "openmeteo_fc" if key == "openmeteo" else key + "_fc"
+        h = sorted(glob.glob(os.path.join(DATA, folder, "historical_*.csv")))
+        sources.append(entry(prefix,
+            fetch_dt=file_date_from_glob(f"{folder}/historical_*.csv"),
+            data_dt=latest_iso_in_file(h[-1] if h else None, col=0)))
+        f = sorted(glob.glob(os.path.join(DATA, folder, "forecast_*.csv")))
+        sources.append(entry(fc_key,
+            fetch_dt=file_date_from_glob(f"{folder}/forecast_*.csv"),
+            data_dt=latest_iso_in_file(f[-1] if f else None, col=0)))
 
     # Climate cycles - files are overwritten in-place (no timestamp in name)
     # so only data currency is tracked

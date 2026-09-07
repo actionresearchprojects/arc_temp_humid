@@ -10,6 +10,7 @@ data/*
 !data/cycles/
 !data/sensor_snapshot.json
 !data/hist_proj/
+!data/hist_proj_uk/
 !data/config.json
 !data/loggers.json
 !data/status.json
@@ -28,6 +29,7 @@ data/omnisense_uk/legacy/
 
 # Within hist_proj/, track everything
 !data/hist_proj/**
+!data/hist_proj_uk/**
 
 __pycache__/
 *.pyc

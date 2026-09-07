@@ -1,28 +1,28 @@
 {
-  "checked_at": "2026-09-07 10:33 UTC",
+  "checked_at": "2026-09-07 11:34 UTC",
   "overall": "stale",
   "sources": [
     {
       "key": "omnisense_weather",
-      "label": "Omnisense: weather station",
+      "label": "Omnisense: weather station (Tanzania)",
       "status": "stale",
       "fetch_date": "2026-09-07 10:33 UTC",
-      "fetch_age_hours": 0.0,
+      "fetch_age_hours": 1.0,
       "fetch_status": "ok",
       "data_date": "2026-08-03 12:33 UTC",
-      "data_age_hours": 838.0,
+      "data_age_hours": 839.0,
       "data_status": "stale",
       "note": ""
     },
     {
       "key": "omnisense_temp_humid",
-      "label": "Omnisense: room temp/humidity",
+      "label": "Omnisense: room temp/humidity (Tanzania)",
       "status": "stale",
       "fetch_date": "2026-09-07 10:33 UTC",
-      "fetch_age_hours": 0.0,
+      "fetch_age_hours": 1.0,
       "fetch_status": "ok",
       "data_date": "2026-09-04 14:20 UTC",
-      "data_age_hours": 68.2,
+      "data_age_hours": 69.2,
       "data_status": "stale",
       "note": "",
       "series": [
@@ -30,99 +30,189 @@
           "id": "32760205",
           "label": "Bedroom 1",
           "data_date": "2026-09-04 14:20 UTC",
-          "data_age_hours": 68.2,
+          "data_age_hours": 69.2,
           "data_status": "stale"
         },
         {
           "id": "327601CB",
           "label": "Bedroom 2",
           "data_date": "2026-09-04 14:17 UTC",
-          "data_age_hours": 68.3,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "32760371",
           "label": "Bedroom 3",
           "data_date": "2026-09-04 14:17 UTC",
-          "data_age_hours": 68.3,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "3276012B",
           "label": "Bedroom 4",
           "data_date": "2026-09-04 14:16 UTC",
-          "data_age_hours": 68.3,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "32760164",
           "label": "Bedroom 4 (above ceiling)",
           "data_date": "2026-09-04 14:20 UTC",
-          "data_age_hours": 68.2,
+          "data_age_hours": 69.2,
           "data_status": "stale"
         },
         {
           "id": "32760048",
           "label": "Bedroom 4 (below metal roof)",
           "data_date": "2026-09-04 14:19 UTC",
-          "data_age_hours": 68.2,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "3276003D",
           "label": "Kitchen",
           "data_date": "2026-09-04 14:19 UTC",
-          "data_age_hours": 68.2,
+          "data_age_hours": 69.2,
           "data_status": "stale"
         },
         {
           "id": "327601CD",
           "label": "Living Room",
           "data_date": "2026-09-04 14:17 UTC",
-          "data_age_hours": 68.3,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "3276028A",
           "label": "Study",
           "data_date": "2026-09-04 14:19 UTC",
-          "data_age_hours": 68.2,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "32760208",
           "label": "Washrooms area",
           "data_date": "2026-09-04 14:18 UTC",
-          "data_age_hours": 68.2,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         },
         {
           "id": "320E02D1",
           "label": "Weather Station T&RH",
           "data_date": "2026-09-04 14:16 UTC",
-          "data_age_hours": 68.3,
+          "data_age_hours": 69.3,
           "data_status": "stale"
         }
       ]
     },
     {
-      "key": "openmeteo_hist",
-      "label": "Open-Meteo historical",
+      "key": "omnisense_uk",
+      "label": "Omnisense: room temp/humidity (UK)",
       "status": "ok",
       "fetch_date": "2026-09-07 10:33 UTC",
-      "fetch_age_hours": 0.0,
+      "fetch_age_hours": 1.0,
+      "fetch_status": "ok",
+      "data_date": "2026-09-06 23:59 UTC",
+      "data_age_hours": 11.6,
+      "data_status": "ok",
+      "note": "",
+      "series": [
+        {
+          "id": "1C290049",
+          "label": "Grove Cottage: External Ambient",
+          "data_date": "2026-09-06 23:59 UTC",
+          "data_age_hours": 11.6,
+          "data_status": "ok"
+        },
+        {
+          "id": "169502D1",
+          "label": "Grove Cottage: Living Room (No. 57)",
+          "data_date": "2026-09-06 23:52 UTC",
+          "data_age_hours": 11.7,
+          "data_status": "ok"
+        },
+        {
+          "id": "19550131",
+          "label": "Holywell Barn: External Ambient (full shade)",
+          "data_date": "2026-09-06 23:54 UTC",
+          "data_age_hours": 11.7,
+          "data_status": "ok"
+        },
+        {
+          "id": "0E3C12EC",
+          "label": "Holywell Barn: Living Room",
+          "data_date": "2026-09-06 23:46 UTC",
+          "data_age_hours": 11.8,
+          "data_status": "ok"
+        }
+      ]
+    },
+    {
+      "key": "openmeteo_hist",
+      "label": "Open-Meteo historical (Tanzania)",
+      "status": "ok",
+      "fetch_date": "2026-09-07 10:33 UTC",
+      "fetch_age_hours": 1.0,
       "fetch_status": "ok",
       "data_date": "2026-09-06 23:00 UTC",
-      "data_age_hours": 11.6,
+      "data_age_hours": 12.6,
       "data_status": "ok",
       "note": ""
     },
     {
       "key": "openmeteo_fc",
-      "label": "Open-Meteo forecast",
+      "label": "Open-Meteo forecast (Tanzania)",
       "status": "ok",
       "fetch_date": "2026-09-07 10:33 UTC",
-      "fetch_age_hours": 0.0,
+      "fetch_age_hours": 1.0,
+      "fetch_status": "ok",
+      "data_date": "2026-09-22 23:00 UTC",
+      "data_age_hours": null,
+      "data_status": "ok",
+      "note": "Latest data shows forecast horizon (~16 days out); fetch date is the freshness signal"
+    },
+    {
+      "key": "openmeteo_grove_hist",
+      "label": "Open-Meteo historical (Grove Cottage)",
+      "status": "ok",
+      "fetch_date": "2026-09-07 10:33 UTC",
+      "fetch_age_hours": 1.0,
+      "fetch_status": "ok",
+      "data_date": "2026-09-06 23:00 UTC",
+      "data_age_hours": 12.6,
+      "data_status": "ok",
+      "note": ""
+    },
+    {
+      "key": "openmeteo_grove_fc",
+      "label": "Open-Meteo forecast (Grove Cottage)",
+      "status": "ok",
+      "fetch_date": "2026-09-07 10:33 UTC",
+      "fetch_age_hours": 1.0,
+      "fetch_status": "ok",
+      "data_date": "2026-09-22 23:00 UTC",
+      "data_age_hours": null,
+      "data_status": "ok",
+      "note": "Latest data shows forecast horizon (~16 days out); fetch date is the freshness signal"
+    },
+    {
+      "key": "openmeteo_holywell_hist",
+      "label": "Open-Meteo historical (Holywell Barn)",
+      "status": "ok",
+      "fetch_date": "2026-09-07 10:33 UTC",
+      "fetch_age_hours": 1.0,
+      "fetch_status": "ok",
+      "data_date": "2026-09-06 23:00 UTC",
+      "data_age_hours": 12.6,
+      "data_status": "ok",
+      "note": ""
+    },
+    {
+      "key": "openmeteo_holywell_fc",
+      "label": "Open-Meteo forecast (Holywell Barn)",
+      "status": "ok",
+      "fetch_date": "2026-09-07 10:33 UTC",
+      "fetch_age_hours": 1.0,
       "fetch_status": "ok",
       "data_date": "2026-09-22 23:00 UTC",
       "data_age_hours": null,
@@ -137,7 +227,7 @@
       "fetch_age_hours": null,
       "fetch_status": "unknown",
       "data_date": "2026-07-01 00:00 UTC",
-      "data_age_hours": 1642.6,
+      "data_age_hours": 1643.6,
       "data_status": "ok",
       "note": "Monthly index; NOAA publishes with up to ~3 month lag - alerts only if data is >120 days old"
     },
@@ -149,7 +239,7 @@
       "fetch_age_hours": null,
       "fetch_status": "unknown",
       "data_date": "2026-08-31 00:00 UTC",
-      "data_age_hours": 178.6,
+      "data_age_hours": 179.6,
       "data_status": "ok",
       "note": "Weekly index from BoM; up to 14 days lag is normal"
     },
@@ -161,7 +251,7 @@
       "fetch_age_hours": null,
       "fetch_status": "unknown",
       "data_date": "2026-09-02 00:00 UTC",
-      "data_age_hours": 130.6,
+      "data_age_hours": 131.6,
       "data_status": "ok",
       "note": "Daily index; NOAA typically lags 2-5 days"
     }

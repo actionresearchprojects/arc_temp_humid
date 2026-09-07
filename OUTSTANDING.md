@@ -135,54 +135,80 @@ containing a House 5 sensor alongside the Grove and Holywell ones.
 To re-test at any point: Actions -> Debug Omnisense fetch -> Run workflow ->
 site `uk`. It downloads and discards, committing nothing.
 
-## 5. Add the UK feeds to the staleness monitor
+## 5. UK feeds in the staleness monitor - DONE
 
-`check_staleness.py` watches the Tanzanian Omnisense feed and Open-Meteo, and
-drives both `data/status.json` and the email alerts. It does **not** yet know
-about `omnisense_uk`, `openmeteo_grove` or `openmeteo_holywell`.
+`check_staleness.py` now watches `omnisense_uk`, `openmeteo_grove` and
+`openmeteo_holywell` alongside the Tanzanian sources, with a per-sensor
+drill-down for the four UK Omnisense loggers exactly as Tanzania has. Existing
+labels gained a region so the two Omnisense feeds are distinguishable. The
+status page needed no change: it iterates whatever `data/status.json` contains.
 
-The consequence showed up on 7 September 2026: the UK Omnisense fetch failed and
-nothing raised it. The dashboard's own sidebar does show "Omnisense (UK) last
-updated", so it is visible to anyone looking, but there is no proactive alert
-the way there is for Tanzania.
-
-Adding them means an entry per feed in the `THRESHOLDS` / `LABELS` dicts near the
-top of `check_staleness.py` and a `sources.append(entry(...))` alongside the
-existing ones.
+The first run with the UK sources in place also confirmed the Tanzanian problem
+described in section 6.
 
 ---
 
-## 6. Optional: Copernicus climate data for the UK
+## 6. Tanzanian Omnisense gateway has stopped reporting
 
-Long-Term Mode overlays Copernicus ERA5 historic and CMIP6 SSP projection
-series. Those are drawn for **one user-defined region** in the Copernicus
-Interactive Climate Atlas, and the set in `data/hist_proj/` is Tanzanian - its
-ERA5 series averages about 25 C, which is meaningless over Herefordshire.
+Not a pipeline fault, and not fixable from here. The fetch runs and succeeds -
+510 897 rows on 7 September - but the newest reading in the export is dated
+**4 September**, and the ARC weather station's last reading is **3 August**,
+thirty-five days earlier.
 
-Long-Term Mode is therefore **hidden entirely on the UK datasets** rather than
-showing another region's projections under a UK building. `CLIMATE_REGIONS` in
-`build.py` maps a region key to a folder and a display label, and each dataset
-names the region that applies to it; a dataset with no region has no Long-Term
-Mode.
+| Sensor group | Latest reading | Age |
+|---|---|---|
+| Omnisense weather station (Tanzania) | 2026-08-03 12:33 | 35 days |
+| Omnisense room temp/humidity (Tanzania) | 2026-09-04 14:20 | ~3 days |
+| Omnisense room temp/humidity (UK) | 2026-09-06 23:59 | ~12 hours |
 
-To add the UK:
-
-1. In the Copernicus Interactive Climate Atlas, draw the region and export the
-   ERA5 historic and the CMIP6 SSP timeseries as CSV.
-2. Put them in a new folder, e.g. `data/hist_proj_uk/`, with the same filenames
-   (`t-ERA5_timeseries_historic.csv`, `t-CMIP6_timeseries_SSP*.csv`).
-3. Add a `CLIMATE_REGIONS` entry pointing at it with a display label.
-4. Set `"climate_region"` on the UK datasets.
-
-Grove and Holywell are about 150 km apart, so strictly they warrant separate
-regions, in the same way their Open-Meteo feeds do. One "ARC UK" region drawn
-around both would be a reasonable simplification for climate projections, whose
-grid is far coarser than weather - but that is a judgement worth making
-deliberately rather than by default.
+The UK site is reporting normally, so this is specific to the Mkuranga
+gateway. Worth checking on site.
 
 ---
 
-## 7. Known limitation, not a task
+## 7. Finish the UK Copernicus climate data
+
+`data/hist_proj_uk/` exists with `t-ERA5_timeseries_historic.csv` in place and
+correct - absolute annual mean temperature for the United Kingdom region,
+1940-2025, around 8-10 C.
+
+**The five CMIP6 projection files are still needed.** The exports supplied on
+7 September were produced with the variable set to **"Change (relative to
+1850-1900)"**, so they hold anomalies of roughly -1.4 to +3.9 K rather than
+absolute temperatures. At 2100 under SSP2-4.5 the supplied file reads 1.82
+where the Tanzanian equivalent reads 28.24 C. Plotted against the ERA5 line at
+around 9 C they would sit far below it and appear to show the UK cooling.
+
+Re-export the five scenarios with the variable on **"Climatology"**, the setting
+the Tanzanian files used, and save them in `data/hist_proj_uk/` as:
+
+```
+t-CMIP6_timeseries_SSP1-1.9.csv
+t-CMIP6_timeseries_SSP1-2.6.csv
+t-CMIP6_timeseries_SSP2-4.5.csv
+t-CMIP6_timeseries_SSP3-7.0.csv
+t-CMIP6_timeseries_SSP5-8.5.csv
+```
+
+The filenames matter: `build.py` globs `t-CMIP6_timeseries_SSP*.csv` and takes
+the scenario name from the filename. The five files supplied were confirmed to
+be those five scenarios and nothing was duplicated - their model sets match the
+Tanzanian files exactly, 9, 22, 23, 22 and 27 models respectively.
+
+Once they are in, the remaining work is a `CLIMATE_REGIONS["uk"]` entry and
+`"climate_region": "uk"` on the three UK datasets.
+
+### On the region
+
+These were drawn for the whole **United Kingdom**, not a free-draw region around
+the buildings as Tanzania's were. That is defensible for climate projections,
+whose grids are far coarser than weather, and it settles the earlier question of
+one region or two: one covers both Grove and Holywell. Worth being a deliberate
+choice rather than an accident of the export.
+
+---
+
+## 8. Known limitation, not a task
 
 ASHRAE 55 Section 5.4.1(a) requires that no heating is in operation. Nothing at
 any site records heating status, and nothing in a temperature and humidity trace
