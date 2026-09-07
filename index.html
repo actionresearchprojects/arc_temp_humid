@@ -4030,20 +4030,41 @@ function downloadChartPng() {
         const trace = legendTraces[idx];
         if (!trace || !trace.meta || !trace.meta.loggerId) return;
         const lid = trace.meta.loggerId;
-        if (isOpenMeteo(lid) || lid === 'govee' || lid.startsWith('climate-')) return;
-        const suffix = ' \u00B7 ' + lid;
+        // Open-Meteo and the climate series are model data, not a building's
+        // sensor, so they get neither tag. Govee has no meaningful serial, so it
+        // skips the ID but still earns a building tag in a region view.
+        if (isOpenMeteo(lid) || lid.startsWith('climate-')) return;
+        const showId = lid !== 'govee';
+        const suffix = showId ? ' \u00B7 ' + lid : '';
         const rawText = textEl.textContent;
-        const splitAt = rawText.indexOf(suffix);
+        const splitAt = suffix ? rawText.indexOf(suffix) : -1;
         const baseName = splitAt >= 0 ? rawText.slice(0, splitAt) : rawText;
+        // In a region view the sidebar groups loggers under a building heading,
+        // but an exported legend has no such grouping and two buildings can hold
+        // the same room name - ARC UK has a "Living Room" in each. Name the
+        // building on the legend row so the PNG stands on its own.
+        const meta = dataset().meta;
+        const bKey = meta.isCombined && meta.loggerBuilding ? meta.loggerBuilding[lid] : null;
+        const building = bKey ? t(bKey) : null;
+        if (!suffix && !building) return;
         while (textEl.firstChild) textEl.removeChild(textEl.firstChild);
         const t1 = doc.createElementNS(ns, 'tspan');
         t1.textContent = baseName;
         textEl.appendChild(t1);
-        const t2 = doc.createElementNS(ns, 'tspan');
-        t2.setAttribute('fill', '#aaaaaa');
-        t2.setAttribute('font-size', '0.85em');
-        t2.textContent = suffix;
-        textEl.appendChild(t2);
+        if (building) {
+          const tb = doc.createElementNS(ns, 'tspan');
+          tb.setAttribute('fill', '#777777');
+          tb.setAttribute('font-size', '0.85em');
+          tb.textContent = ' [' + building + ']';
+          textEl.appendChild(tb);
+        }
+        if (suffix) {
+          const t2 = doc.createElementNS(ns, 'tspan');
+          t2.setAttribute('fill', '#aaaaaa');
+          t2.setAttribute('font-size', '0.85em');
+          t2.textContent = suffix;
+          textEl.appendChild(t2);
+        }
       });
     }
     // Inject per-logger ext source labels below each comfort legend item in PNG SVG

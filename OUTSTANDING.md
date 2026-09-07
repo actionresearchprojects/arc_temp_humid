@@ -135,7 +135,24 @@ containing a House 5 sensor alongside the Grove and Holywell ones.
 To re-test at any point: Actions -> Debug Omnisense fetch -> Run workflow ->
 site `uk`. It downloads and discards, committing nothing.
 
-## 5. Optional: Copernicus climate data for the UK
+## 5. Add the UK feeds to the staleness monitor
+
+`check_staleness.py` watches the Tanzanian Omnisense feed and Open-Meteo, and
+drives both `data/status.json` and the email alerts. It does **not** yet know
+about `omnisense_uk`, `openmeteo_grove` or `openmeteo_holywell`.
+
+The consequence showed up on 7 September 2026: the UK Omnisense fetch failed and
+nothing raised it. The dashboard's own sidebar does show "Omnisense (UK) last
+updated", so it is visible to anyone looking, but there is no proactive alert
+the way there is for Tanzania.
+
+Adding them means an entry per feed in the `THRESHOLDS` / `LABELS` dicts near the
+top of `check_staleness.py` and a `sources.append(entry(...))` alongside the
+existing ones.
+
+---
+
+## 6. Optional: Copernicus climate data for the UK
 
 Long-Term Mode overlays Copernicus ERA5 historic and CMIP6 SSP projection
 series. Those are drawn for **one user-defined region** in the Copernicus
@@ -165,7 +182,7 @@ deliberately rather than by default.
 
 ---
 
-## 6. Known limitation, not a task
+## 7. Known limitation, not a task
 
 ASHRAE 55 Section 5.4.1(a) requires that no heating is in operation. Nothing at
 any site records heating status, and nothing in a temperature and humidity trace

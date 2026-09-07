@@ -79,9 +79,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@users.noreply.github.com"
-          git add data/openmeteo/ data/status.json index.html status.html
-          [ -d data/omnisense ] && git add data/omnisense/ || true
-          [ -d data/cycles ]   && git add data/cycles/    || true
+          # Stage all of data/ rather than naming directories. .gitignore already
+          # ignores data/* except an explicit allowlist, so this stages exactly
+          # what is tracked and picks up new feeds automatically - the previous
+          # named list silently dropped data/omnisense_uk/, data/openmeteo_grove/
+          # and data/openmeteo_holywell/, so UK data was fetched and then never
+          # committed. It also missed sensor_snapshot.json and loggers.json,
+          # which the --auto build rewrites.
+          git add -A data/ index.html status.html
           if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
@@ -93,7 +98,7 @@ jobs:
                 exit 0
               fi
               echo "Push attempt $i failed; rebasing onto remote and retrying"
-              git pull --rebase origin main
+              git pull --rebase --autostash origin main
             done
             echo "Push failed after 5 attempts"
             exit 1
