@@ -148,21 +148,51 @@ described in section 6.
 
 ---
 
-## 6. Tanzanian Omnisense gateway has stopped reporting
+## 6. Mkuranga Omnisense has stopped reporting
 
-Not a pipeline fault, and not fixable from here. The fetch runs and succeeds -
-510 897 rows on 7 September - but the newest reading in the export is dated
-**4 September**, and the ARC weather station's last reading is **3 August**,
-thirty-five days earlier.
+Not a pipeline fault and not fixable from here. The fetch runs and succeeds -
+510 897 rows on 7 September - but the data inside it stops.
 
-| Sensor group | Latest reading | Age |
+Reading the export sensor by sensor shows **two separate events**, which is the
+useful part:
+
+### Event 1: everything stopped on 4 September
+
+| Sensor | Description | Last reading (EAT) |
 |---|---|---|
-| Omnisense weather station (Tanzania) | 2026-08-03 12:33 | 35 days |
-| Omnisense room temp/humidity (Tanzania) | 2026-09-04 14:20 | ~3 days |
-| Omnisense room temp/humidity (UK) | 2026-09-06 23:59 | ~12 hours |
+| B3CE8C7C | Performance stats | 2026-09-04 09:17 |
+| 3276012B | House 5 | 2026-09-04 14:16 |
+| 320E02D1 | Weather Station | 2026-09-04 14:16 |
+| 327601CD | House 5 | 2026-09-04 14:17 |
+| 32760371 | House 5 | 2026-09-04 14:17 |
+| 327601CB | House 5 | 2026-09-04 14:17 |
+| 32760208 | House 5 | 2026-09-04 14:18 |
+| 3276028A | House 5 | 2026-09-04 14:19 |
+| 32760048 | House 5 | 2026-09-04 14:19 |
+| 3276003D | House 5 | 2026-09-04 14:19 |
+| 32760164 | House 5 | 2026-09-04 14:20 |
+| 32760205 | House 5 | 2026-09-04 14:20 |
 
-The UK site is reporting normally, so this is specific to the Mkuranga
-gateway. Worth checking on site.
+Eleven sensors stopped inside **four minutes** of one another. Sensors do not
+fail in unison, so this is the **gateway**: power, internet, or the base station
+itself. The gateway's own "Performance stats" record stops at the same time,
+which is consistent. Start there rather than with any individual sensor.
+
+### Event 2: two sensors stopped a month earlier, on 3 August
+
+| Sensor | Description | Last reading (EAT) |
+|---|---|---|
+| 30B40014 | Sun | 2026-08-03 12:33 |
+| 195701C1 | CO2 sensor in House 5 Living Room | 2026-08-03 12:35 |
+
+These two stopped within two minutes of each other but **thirty-two days before
+the rest**, and they are the two that are not plain House 5 room sensors. A
+separate cause - batteries, a shared repeater, or physical disturbance. Note
+`30B40014` is what the status page calls "Omnisense: weather station", which is
+why that card has been showing 35 days stale while the others showed 3.
+
+Both are visible on the status page now, the second only because the first was
+investigated.
 
 ---
 
