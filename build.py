@@ -326,6 +326,8 @@ DATASETS = {
         "tz_label": "GMT/BST",
         "season_scheme": "uk",
         "openmeteo_feeds": ["grove", "holywell"],
+        "default_off": ["Grove Historical (Open-Meteo)", "Grove Forecast (Open-Meteo)",
+                        "Holywell Historical (Open-Meteo)", "Holywell Forecast (Open-Meteo)"],
         "comfort_model": COMFORT_MODEL_UK,
         "heating_unverified": HEATING_UNVERIFIED_UK,
         "threshold": THRESHOLD_UK,
@@ -342,15 +344,18 @@ DATASETS = {
         "tz_label": "GMT/BST",
         "season_scheme": "uk",
         "openmeteo_feed": "grove",
+        # Available but unticked: the on-site sensors are the subject,
+        # and the model series are reference and running-mean fallback.
+        "default_off": ["Grove Historical (Open-Meteo)",
+                        "Grove Forecast (Open-Meteo)"],
         "comfort_model": COMFORT_MODEL_UK,
         "heating_unverified": HEATING_UNVERIFIED_UK,
         "threshold": THRESHOLD_UK,
         "omnisense": {"source": "uk", "sensors": GROVE_SENSORS},
-        # Open-Meteo drives the running mean: it reaches back years, where the
-        # on-site sensor starts in July 2026, and the running mean needs the
-        # days before a reading. The on-site ambient stays selectable per logger
-        # in config.html, and is what the chart shows alongside it.
-        "external_logger": "Grove Historical (Open-Meteo)",
+        # The on-site external ambient drives the running mean; Open-Meteo
+        # fills days it is missing, including the 30-day run-up before the
+        # sensor was installed (see compute_exponential_running_mean).
+        "external_logger": "1C290049",
         "external_sensors": ["Grove Historical (Open-Meteo)",
                              "Grove Forecast (Open-Meteo)", "1C290049"],
         "room_loggers": ["169502D1"],
@@ -365,11 +370,15 @@ DATASETS = {
         "tz_label": "GMT/BST",
         "season_scheme": "uk",
         "openmeteo_feed": "holywell",
+        # Available but unticked: the on-site sensors are the subject,
+        # and the model series are reference and running-mean fallback.
+        "default_off": ["Holywell Historical (Open-Meteo)",
+                        "Holywell Forecast (Open-Meteo)"],
         "comfort_model": COMFORT_MODEL_UK,
         "heating_unverified": HEATING_UNVERIFIED_UK,
         "threshold": THRESHOLD_UK,
         "omnisense": {"source": "uk", "sensors": HOLYWELL_SENSORS},
-        "external_logger": "Holywell Historical (Open-Meteo)",
+        "external_logger": "19550131",
         "external_sensors": ["Holywell Historical (Open-Meteo)",
                              "Holywell Forecast (Open-Meteo)", "19550131"],
         "room_loggers": ["0E3C12EC"],
@@ -1189,13 +1198,20 @@ def resolve_cfg(key, member_data=None):
 def member_of(key, logger_id, member_data=None):
     """For a region, which member building a logger belongs to.
 
-    Returns None for a logger no single member owns - Open-Meteo, which is
-    external model data rather than any building's sensor, and anything two
-    members share. Those get no building heading in the sidebar.
+    Returns None only for something no single member owns, which then gets no
+    building heading in the sidebar. Open-Meteo is decided by feed rather than
+    by logger: ARC Tanzania's two buildings share one feed, so it is genuinely
+    shared and stays unheaded, while ARC UK's buildings have a feed each, so
+    each belongs to its own building and must be headed as such. Treating all
+    Open-Meteo as shared put Holywell's weather under the Grove heading.
     """
     members = DATASETS[key].get("combine")
-    if not members or logger_id in OPENMETEO_IDS:
+    if not members:
         return None
+    if logger_id in OPENMETEO_IDS:
+        owners = [m for m in members
+                  if logger_id in set(DATASETS[m].get("external_sensors", []))]
+        return owners[0] if len(owners) == 1 else None
     member_data = member_data or {}
     owners = []
     for m in members:
@@ -1243,7 +1259,11 @@ def build_dataset_json(key, df, logger_overrides=None, member_data=None):
         fallbacks_by_member[m] = [l for l in feed_ids(dataset_feeds(m))
                                   if l in set(DATASETS[m].get("external_sensors", []))]
 
-    fallback_loggers = [l for l in cfg.get("external_sensors", []) if l in OPENMETEO_IDS]
+    # Historical only. The forecast series runs 16 days into the future, and a
+    # running mean is a statement about days already past.
+    forecast_ids = {f["forecast"] for f in OPENMETEO_FEEDS.values()}
+    fallback_loggers = [l for l in cfg.get("external_sensors", [])
+                        if l in OPENMETEO_IDS and l not in forecast_ids]
     if not fallback_loggers and default_external_logger in OPENMETEO_IDS:
         fallback_loggers = [default_external_logger]
 
@@ -1401,6 +1421,7 @@ def build_dataset_json(key, df, logger_overrides=None, member_data=None):
             "timezone":     cfg.get("timezone", "Africa/Dar_es_Salaam"),
             "tzLabel":      cfg.get("tz_label", "EAT, UTC+03:00"),
             "seasonScheme": cfg.get("season_scheme", "tz"),
+            "defaultOff":   [l for l in cfg.get("default_off", []) if l in unique_loggers],
             "comfortModel": cfg.get("comfort_model", COMFORT_MODEL_TZ),
             "threshold":    cfg.get("threshold", THRESHOLD_TZ),
             "comfortTpmaRange": {"min": COMFORT_TPMA_MIN, "max": COMFORT_TPMA_MAX},
@@ -3957,7 +3978,9 @@ function loadDataset(key) {
   const m = dataset().meta;
 
   // Reset selections
-  state.selectedLoggers = new Set(m.lineLoggers || m.loggers);
+  // meta.defaultOff lists loggers that are available but start unticked
+  const offByDefault = new Set(m.defaultOff || []);
+  state.selectedLoggers = new Set((m.lineLoggers || m.loggers).filter(id => !offByDefault.has(id)));
   state.selectedRoomLoggers = new Set(m.roomLoggers);
   // Reinitialize compare sets for new dataset
   initCompareSets();
@@ -9705,9 +9728,13 @@ def main():
     if os_uk_files:
         os_uk_dt = parse_fetch_time(os_uk_files[-1])
         fetch_times["omnisense_uk"] = format_fetch_time(os_uk_dt)
+        # Omnisense only. Taking the max over every series swept in the
+        # Open-Meteo forecast, which runs 16 days ahead, and reported the
+        # sensors as last updated a fortnight into the future.
         uk_last = [e["timestamps"][-1]
                    for k in ("grove", "holywell") if k in all_data
-                   for e in all_data[k]["series"].values() if e["timestamps"]]
+                   for lid, e in all_data[k]["series"].items()
+                   if e["timestamps"] and LOGGER_SOURCES.get(lid) == "Omnisense"]
         if uk_last:
             data_freshness["omnisense_uk_last_ms"] = max(uk_last)
     # Cycle data fetch timestamp

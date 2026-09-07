@@ -413,7 +413,7 @@
         "showInHistogram": true,
         "showInPeriodic": true,
         "showInComfort": true,
-        "external_source": "Grove Historical (Open-Meteo)"
+        "external_source": "1C290049"
       }
     ]
   },
@@ -474,7 +474,7 @@
         "showInHistogram": true,
         "showInPeriodic": true,
         "showInComfort": true,
-        "external_source": "Holywell Historical (Open-Meteo)"
+        "external_source": "19550131"
       }
     ]
   }

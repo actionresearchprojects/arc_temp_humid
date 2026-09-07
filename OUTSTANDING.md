@@ -44,33 +44,31 @@ per-logger threshold would be needed to draw 26 C for that sensor alone.
 
 ---
 
-## 2. Decide whether to add the TM52 / EN 16798-1 bands
+## 2. TM52 / EN 16798-1 bands - DECIDED, not adding them
 
-The UK datasets currently default to **ASHRAE 55 80%**
-(`0.31 x Trm + 17.8 +/- 3.5`). TM59 criterion (a) is defined against **TM52 /
-EN 16798-1 Category II** (`0.33 x Trm + 18.8 +/- 3`), a different line fitted to
-European rather than global field data.
+No TM59 claims are intended, so the UK datasets stay on **ASHRAE 55 80%** and no
+TM52 bands are added.
 
-Across the UK running-mean range the TM52 Cat II upper limit sits about 0.7 to
-0.9 K above ASHRAE's, so ASHRAE is the more conservative of the two:
+Worth recording why that is a safe default rather than merely a convenient one:
+across the UK running-mean range the TM52 Cat II upper limit sits about 0.7 to
+0.9 K **above** ASHRAE's, so ASHRAE is the more conservative of the two. Nothing
+is being flattered by the choice.
 
 | Upper limit at | Trm 10 C | Trm 15 C | Trm 20 C |
 |---|---|---|---|
-| ASHRAE 55 80% (current) | 24.4 | 26.0 | 27.5 |
+| ASHRAE 55 80% (in use) | 24.4 | 26.0 | 27.5 |
 | TM52 / EN 16798-1 Cat II | 25.1 | 26.8 | 28.4 |
 | TM52 / EN 16798-1 Cat III | 26.1 | 27.8 | 29.4 |
 
-On the data as it stands the choice changes nothing that matters. TM59
-criterion (a) exceedance is 0.00% at Grove under every model, and at Holywell
-0.53% on ASHRAE against 0.27% on Cat II - both far inside the 3% allowance.
+On the current data the choice changes nothing anyway: TM59 criterion (a)
+exceedance is 0.00% at Grove under every model, and at Holywell 0.53% on ASHRAE
+against 0.27% on Cat II, both far inside the 3% allowance.
 
-It matters only if a TM59 result is to be **stated**, because then the line has
-to be the one TM59 names. Worth noting that EN 16798-1 designates **Category III
-for existing buildings**, which these retrofits are, so Cat III may be more
-defensible than Cat II. That is a reporting decision rather than a technical
-one.
-
-Adding both is small: two entries in `COMFORT_MODELS` plus labels.
+**If that ever changes** and a TM59 result does need stating, the line has to be
+the one TM59 names. Adding TM52 Cat II and Cat III is two entries in
+`COMFORT_MODELS` plus labels. Note that EN 16798-1 designates **Category III for
+existing buildings**, which these retrofits are, so Cat III would likely be the
+right one rather than Cat II.
 
 ## 3. Open-Meteo coordinates and date ranges - DONE
 

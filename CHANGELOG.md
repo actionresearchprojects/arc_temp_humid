@@ -1,5 +1,13 @@
 ## Changelog
 
+### 2026-09-07 16:54:03 CST
+- **Fix: the UK freshness note reported a date two weeks in the future** - `omnisense_uk_last_ms` took the maximum timestamp across *every* UK series, which swept in the Open-Meteo forecast running 16 days ahead. The sidebar consequently said the UK sensors were last updated on 21 September when the readings end on 31 August. It now considers Omnisense series only, matching how the Tanzanian figure is computed.
+- **Fix: in ARC UK, Holywell's Open-Meteo appeared under the Grove heading** - `member_of` returned `None` for anything in `OPENMETEO_IDS`, which was right when a single Open-Meteo feed was shared by both Tanzanian buildings but wrong once each UK building had its own. Ownership is now decided by which members actually list the series, so Tanzania's shared feed stays unheaded while each UK feed is headed by its own building. The external section now reads Grove Cottage then Holywell Barn, each with its three series.
+- **ARC UK adaptive comfort runs off the on-site sensor again, with Open-Meteo as fallback** - `compute_exponential_running_mean` already fills days the primary is missing, so the on-site external ambient drives the running mean and Open-Meteo covers the 30-day run-up before the sensors were installed, and any later gaps. Verified: both sources appear in `extSourceSpans` for both buildings.
+- **Forecast series can no longer seed a running mean** - `fallback_loggers` included every Open-Meteo id in `external_sensors`, forecast included, despite `CLAUDE.md` stating forecast is excluded from comfort calculations. A running mean is a statement about days already past, so forecast ids are now filtered out.
+- **UK Open-Meteo series default to unticked** - New per-dataset `default_off` list, surfaced as `meta.defaultOff` and applied when a dataset loads. The on-site sensors are the subject of these charts; the model series remain available and are still the running-mean fallback. Tanzania is unaffected.
+- **TM52 bands will not be added** - No TM59 claims are intended, so the UK stays on ASHRAE 55 80%, which is in any case the more conservative of the two: TM52 Cat II sits 0.7 to 0.9 K above it across the UK range. Recorded in `OUTSTANDING.md` section 2 with what to do if that ever changes.
+
 ### 2026-09-07 05:10:47 CST
 - **ARC UK Omnisense fetch verified in CI** - Dispatched `debug-omnisense.yml` with `site: uk` against the real repository secrets: login succeeded on site 58345, 180 855 rows returned, 10.3 MB written for 2026-07-31 to 2026-09-06. The shared credentials do reach the UK site, as the export containing a House 5 sensor alongside Grove and Holywell suggested. The debug workflow downloads and discards, so this committed nothing.
 
