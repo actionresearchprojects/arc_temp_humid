@@ -1501,7 +1501,7 @@ body { font-family: 'Ubuntu', sans-serif; font-size: 13px; background: #f8f9fa; 
 #header a { display: flex; align-items: center; }
 .bar-divider { border-left: 1px solid #ccc; height: 20px; flex-shrink: 0; margin: 0 2px; }
 #main { display: flex; flex: 1; overflow: hidden; position: relative; }
-#sidebar { width: 300px; background: white; border-right: 1px solid #ddd; overflow-y: auto; padding: 10px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; transition: transform 0.2s ease; z-index: 10; }
+#sidebar { width: 330px; background: white; border-right: 1px solid #ddd; overflow-y: auto; padding: 10px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; transition: transform 0.2s ease; z-index: 10; }
 #chart-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
 #time-bar { background: white; border-bottom: 1px solid #ddd; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 #time-bar-top { display: flex; align-items: center; width: 100%; gap: 8px; }
@@ -1542,7 +1542,14 @@ select { font-size: 12px; padding: 3px 5px; border: 1px solid #ccc; border-radiu
 select:focus { outline: none; border-color: #4a90d9; }
 #chart-type option[value="beta"] { color: #c0392b; }
 .beta-tag { display:inline-block; background:#c0392b; color:white; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px; margin-left:4px; vertical-align:middle; letter-spacing:0.03em; }
-.cb-label { display: flex; align-items: center; gap: 5px; padding: 1px 0; cursor: pointer; line-height: 1.4; font-size: 12px; }
+.cb-label { display: flex; align-items: flex-start; gap: 5px; padding: 1px 0; cursor: pointer; line-height: 1.4; font-size: 12px; }
+.cb-label input[type="checkbox"] { flex: 0 0 auto; margin-top: 2px; }
+/* The name and its source suffix live in one block so they wrap as continuous
+   text. As separate flex items each wrapped on its own, which pushed the
+   suffix into a ragged second column beside a wrapped name. */
+.cb-text { flex: 1 1 auto; min-width: 0; }
+.cb-swatch { flex: 0 0 auto; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-top: 4px; }
+.cb-swatch-sm { width: 8px; height: 8px; margin-top: 4px; }
 .cb-label:hover { color: #1f77b4; }
 [data-tooltip] { position: relative; }
 [data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; left: 16px; top: 100%; background: #333; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; white-space: nowrap; z-index: 100; pointer-events: none; }
@@ -3363,7 +3370,7 @@ function renderCompareSets() {
         const source = m.loggerSources[id] || '';
         const isExtTT = extSet.has(id) && source === 'TinyTag';
         const ttSuffix = isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '';
-        lbl.innerHTML = '<input type="checkbox" data-cmp-logger="' + id + '" ' + (stateSet.has(id) ? 'checked' : '') + '> <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + m.colors[id] + ';vertical-align:middle"></span> <span class="logger-name" data-lid="' + id + '">' + ln(id) + '</span>' + meteoSuffix(id) + omniSuffix(source) + ttSuffix;
+        lbl.innerHTML = '<input type="checkbox" data-cmp-logger="' + id + '" ' + (stateSet.has(id) ? 'checked' : '') + '> <span class="cb-swatch cb-swatch-sm" style="background:' + m.colors[id] + '"></span> <span class="cb-text"><span class="logger-name" data-lid="' + id + '">' + ln(id) + '</span>' + meteoSuffix(id) + omniSuffix(source) + ttSuffix + '</span>';
         lbl.querySelector('input').addEventListener('change', e => {
           e.target.checked ? stateSet.add(id) : stateSet.delete(id);
           updatePlot();
@@ -3427,7 +3434,7 @@ function renderCompareSets() {
           const src = otherM.loggerSources[id] || '';
           const color = otherM.colors[id] || '#999';
           const dispName = lnFrom(otherM, id);
-          lbl.innerHTML = '<input type="checkbox" data-cross-logger="' + otherKey + ':' + id + '" ' + (crossSet.has(id) ? 'checked' : '') + '> <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + color + ';vertical-align:middle"></span> <span class="logger-name">' + dispName + '</span>' + (src ? ' <span style="color:#aaa;font-size:10px">(' + src + ')</span>' : '');
+          lbl.innerHTML = '<input type="checkbox" data-cross-logger="' + otherKey + ':' + id + '" ' + (crossSet.has(id) ? 'checked' : '') + '> <span class="cb-swatch cb-swatch-sm" style="background:' + color + '"></span> <span class="cb-text"><span class="logger-name">' + dispName + '</span>' + (src ? ' <span style="color:#aaa;font-size:10px">(' + src + ')</span>' : '') + '</span>';
           lbl.querySelector('input').addEventListener('change', e => {
             e.target.checked ? crossSet.add(id) : crossSet.delete(id);
             updatePlot();
@@ -4008,7 +4015,7 @@ function loadDataset(key) {
     lbl.dataset.tooltip = loggerTooltip(id, m);
     const hasAnom = !!anomRanges[id];
     const anomSuffix = hasAnom ? ' <span class="anomalous-warn">&#9888;</span>' : '';
-    lbl.innerHTML = `<input type="checkbox" data-logger-id="${id}" ${stateSet.has(id) ? 'checked' : ''}> <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${m.colors[id]};vertical-align:middle"></span> <span class="logger-name" data-lid="${id}">${ln(id)}</span>${meteoSuffix(id)}${omniSuffix(m.loggerSources[id] || '')}${extraLabel || ''}${anomSuffix}`;
+    lbl.innerHTML = `<input type="checkbox" data-logger-id="${id}" ${stateSet.has(id) ? 'checked' : ''}> <span class="cb-swatch" style="background:${m.colors[id]}"></span> <span class="cb-text"><span class="logger-name" data-lid="${id}">${ln(id)}</span>${meteoSuffix(id)}${omniSuffix(m.loggerSources[id] || '')}${extraLabel || ''}${anomSuffix}</span>`;
     lbl.querySelector('input').addEventListener('change', e => {
       e.target.checked ? stateSet.add(id) : stateSet.delete(id);
       if (state.timeMode === 'all') _zoomReset = true; updatePlot();
@@ -6848,12 +6855,15 @@ function renderAdaptiveComfort() {
         for (let i = 0; i < filtered.extTemp.length; i++) {
           cmpX.push(filtered.extTemp[i]);
           cmpY.push(filtered.temperature[i]);
-          cmpHover.push(ln(loggerId));
+          cmpHover.push([ln(loggerId), toLocalString(filtered.timestamps[i]).slice(0, 16)]);
           cmpColors.push(color);
         }
       } else {
         const lgGroup = loggerId;
-        const customdata = filtered.timestamps.map(ts => extSourcesForPoint(series.extSourceSpans, ts, m));
+        // The x-axis here is running mean temperature, not time, so a point's
+        // date is not recoverable from its position: it has to be in the hover.
+        const customdata = filtered.timestamps.map(ts =>
+          [toLocalString(ts).slice(0, 16), extSourcesForPoint(series.extSourceSpans, ts, m)]);
         // Readings the standard does not cover are greyed in place, so the gap
         // in applicability is visible without the data going missing.
         const ptColors = filtered.extTemp.map(ext =>
@@ -6865,7 +6875,7 @@ function renderAdaptiveComfort() {
         traces.push({x:filtered.extTemp, y:filtered.temperature, type:'scatter', mode:'markers',
           name:cName, marker:{color: ptColors, size:4, opacity:0.2},
           legendgroup:lgGroup, showlegend:false, meta:{loggerId}, customdata,
-          hovertemplate:`${ln(loggerId)}<br>${t('runningMean')}: %{x:.1f}°C<br>${t('roomTemp')}: %{y:.1f}°C<br>${t('extSource')}: %{customdata}<br>${t('sensor')}: ${cSource}${cIdLabel}<extra></extra>`});
+          hovertemplate:`${ln(loggerId)}<br>${t('dateTime')}: %{customdata[0]}<br>${t('runningMean')}: %{x:.1f}°C<br>${t('roomTemp')}: %{y:.1f}°C<br>${t('extSource')}: %{customdata[1]}<br>${t('sensor')}: ${cSource}${cIdLabel}<extra></extra>`});
         traces.push({x:[null], y:[null], type:'scatter', mode:'markers',
           name:cName, marker:{color, size:10, opacity:0.8, symbol:'square', line:{width:0}},
           legendgroup:lgGroup, showlegend:true, hoverinfo:'skip', meta:{loggerId}});
@@ -6878,7 +6888,7 @@ function renderAdaptiveComfort() {
       traces.push({x:cmpX, y:cmpY, type:'scatter', mode:'markers',
         name: iter.legendName, marker:{color: cmpColors, size:4, opacity:0.2},
         legendgroup:lgGroup, showlegend:false, customdata:cmpHover,
-        hovertemplate:`[${iter.setLabel}] %{customdata}<br>Running mean: %{x:.1f}°C<br>Room temp: %{y:.1f}°C<extra></extra>`});
+        hovertemplate:`[${iter.setLabel}] %{customdata[0]}<br>${t('dateTime')}: %{customdata[1]}<br>${t('runningMean')}: %{x:.1f}°C<br>${t('roomTemp')}: %{y:.1f}°C<extra></extra>`});
       // Legend-only trace
       traces.push({x:[null], y:[null], type:'scatter', mode:'markers',
         name: iter.legendName, marker:{color: iter.baseColor, size:12, opacity:0.9, symbol:'square', line:{width:0}},
