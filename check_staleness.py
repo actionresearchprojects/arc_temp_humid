@@ -107,13 +107,13 @@ UK_LOGGER_NAMES = {
     "0E3C12EC": "Holywell Barn: Living Room",
 }
 
-# Gateway (hub) sensor IDs - the "Performance stats" block in the CSV.
-# These report rx_count, sensor_count and timestamps; if the gateway is stale
+# Gateway (hub) sensor ID - the "Performance stats" block in the CSV.
+# Reports rx_count, sensor_count and timestamps; if the gateway is stale
 # but sensors are too, the gateway is the likely cause (power or internet).
-GATEWAY_IDS = {
-    "tz": "B3CE8C7C",
-    "uk": "6BC66BE6",
-}
+# Only Tanzania has a real gateway; the UK CSV's "Performance stats" block
+# (6BC66BE6) is an Omnisense platform artifact with factory-default coords
+# and zero rx_count - not a physical device at the UK sites.
+GATEWAY_ID_TZ = "B3CE8C7C"
 GATEWAY_THRESHOLD_H = 24  # flag if gateway hasn't reported in over a day
 
 ROOM_TH_LOGGER_NAMES = {
@@ -347,7 +347,7 @@ def run():
     omni_latest = omni_files[-1] if omni_files else None
     # Gateway (hub) latest timestamp - shared by all TZ sensors
     tz_gw_dt = latest_iso_in_file(omni_latest, col=2,
-                                   match_col=0, match_vals=GATEWAY_IDS["tz"])
+                                   match_col=0, match_vals=GATEWAY_ID_TZ)
     sources.append(entry("omnisense_weather",
         fetch_dt=omni_fetch_dt,
         data_dt=latest_iso_in_file(omni_latest, col=2,
@@ -383,13 +383,10 @@ def run():
     # Omnisense, ARC UK - separate site, separate export, same shape
     uk_files = sorted(glob.glob(os.path.join(DATA, "omnisense_uk", "omnisense_uk_*.csv")))
     uk_latest = uk_files[-1] if uk_files else None
-    uk_gw_dt = latest_iso_in_file(uk_latest, col=2,
-                                   match_col=0, match_vals=GATEWAY_IDS["uk"])
     uk_entry = entry("omnisense_uk",
         fetch_dt=file_date_from_glob("omnisense_uk/omnisense_uk_*.csv"),
         data_dt=latest_iso_in_file(uk_latest, col=2,
-                                   match_col=0, match_vals=UK_SENSOR_IDS),
-        gateway_dt=uk_gw_dt)
+                                   match_col=0, match_vals=UK_SENSOR_IDS))
     uk_per_sensor = latest_iso_per_id_in_file(uk_latest, col=2, id_col=0, ids=UK_SENSOR_IDS)
     uk_threshold = DATA_THRESHOLD_H["omnisense_uk"]
     uk_entry["series"] = []
