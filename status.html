@@ -352,60 +352,56 @@
     return display + (age ? "<br><span class='meta-age'>" + age + "</span>" : "");
   }
 
-  function fmtDowntime(isoUtc) {
+  function fmtDuration(isoUtc) {
     var h = liveAgeH(isoUtc);
     if (h === null) return "";
-    if (h < 1)  return " (" + Math.round(h * 60) + " min)";
-    if (h < 48) return " (" + h.toFixed(1) + "h)";
-    return " (" + (h / 24).toFixed(1) + "d)";
+    if (h < 1)  return Math.round(h * 60) + " min";
+    if (h < 48) return h.toFixed(1) + "h";
+    return (h / 24).toFixed(1) + "d";
+  }
+
+  function gwClause(s) {
+    var dur = fmtDuration(s.gateway_date_utc);
+    if (s.gateway_status === "ok") return "Gateway online.";
+    if (s.gateway_status === "warn") return "Gateway last reported " + dur + " ago, likely a short internet interruption.";
+    return "Gateway offline for " + dur + ", likely a site-level issue (power cut or internet outage).";
   }
 
   function explainCard(s, staleN, totalN) {
     var f = s.fetch_status || "unknown";
     var d = (staleN !== undefined && staleN > 0) ? "stale" : (s.data_status || "unknown");
-    var g = s.gateway_status;  // undefined for non-Omnisense sources
+    var g = s.gateway_status;
 
-    // Gateway-aware explanations for Omnisense sources
+    // Gateway-aware: consistent structure of [gateway clause]. [data clause].
     if (g) {
-      var gwDown = fmtDowntime(s.gateway_date_utc);
-      var gOnline = (g === "ok");
-      var gRecent = (g === "ok" || g === "warn");
-      if (gOnline && f === "ok" && d === "ok")
-        return "Gateway, pipeline and sensors are all working normally.";
-      if (g === "warn" && f === "ok" && d === "ok")
-        return "Gateway hasn\u2019t reported in the last hour" + gwDown + " \u2014 likely a short internet interruption. Pipeline and sensor data are current.";
-      if (g === "warn" && f === "ok" && d === "stale") {
+      var gw = gwClause(s);
+      if (d === "ok")
+        return gw + " Pipeline and sensor data are current.";
+      if (d === "stale" && g === "stale")
+        return gw + " All sensors affected. Data may backfill when connectivity returns.";
+      if (d === "stale") {
         if (staleN !== undefined)
-          return "The gateway hasn\u2019t reported recently" + gwDown + " and " + staleN + " of " + totalN + " sensors have stopped reporting \u2014 likely individual logger issues. The pipeline itself is running fine.";
-        return "The gateway hasn\u2019t reported recently" + gwDown + " and the sensor has stopped sending readings \u2014 likely a logger issue.";
+          return gw + " " + staleN + " of " + totalN + " sensors have stopped reporting, likely individual logger issues (battery, moved, or faulty).";
+        return gw + " The sensor has stopped reporting, likely a logger issue (battery, moved, or faulty).";
       }
-      if (gOnline && f === "ok" && d === "stale") {
-        if (staleN !== undefined)
-          return "The gateway is online and the pipeline ran, but " + staleN + " of " + totalN + " sensors have stopped reporting \u2014 likely individual logger issues (battery, moved, or faulty).";
-        return "The gateway is online and the pipeline ran, but the sensor has stopped sending readings \u2014 likely a logger issue (battery, moved, or faulty).";
-      }
-      if (g === "stale" && d === "stale")
-        return "The gateway itself has gone offline" + gwDown + " \u2014 this is likely a site-level issue (power cut or internet outage) affecting all sensors. When connectivity returns, data may backfill if the loggers kept recording locally.";
-      if (g === "stale" && d === "ok")
-        return "The gateway appears offline" + gwDown + " but data was current at last check. It may have gone down very recently.";
     }
 
     // Non-gateway sources
     if (f === "ok" && d === "ok")
-      return "The pipeline fetched new data successfully and readings are current.";
+      return "Pipeline running and readings are current.";
     if (f === "ok" && d === "stale") {
       if (staleN !== undefined)
-        return staleN + " of " + totalN + " sensors have stopped reporting \u2014 they may be offline or disconnected. The pipeline itself is running fine.";
-      return "The pipeline is running fine, but the sensor has stopped sending new readings \u2014 it may be offline or disconnected.";
+        return "Pipeline running, but " + staleN + " of " + totalN + " sensors have stopped reporting.";
+      return "Pipeline running, but the sensor has stopped sending new readings.";
     }
     if (f === "stale" && d === "ok")
-      return "The pipeline hasn\u2019t run recently, but data was current at last check. The scheduled job may have failed.";
+      return "Pipeline has not run recently, but data was current at last check. The scheduled job may have failed.";
     if (f === "stale" && d === "stale")
-      return "The pipeline hasn\u2019t run recently and sensor data is outdated. Check whether the scheduled job and the sensor are both working.";
+      return "Pipeline has not run recently and sensor data is outdated.";
     if (f === "unknown" && d === "ok")
       return "Data is up to date.";
     if (f === "unknown" && d === "stale")
-      return "This dataset hasn\u2019t been updated within its expected window \u2014 the upstream provider may be delayed.";
+      return "This dataset has not been updated within its expected window. The upstream provider may be delayed.";
     return "Status could not be determined for this source.";
   }
 
@@ -413,8 +409,8 @@
     if (x.data_status === "ok") return "Reporting normally.";
     if (x.data_status === "stale") {
       if (gwStatus === "stale")
-        return "Not reporting \u2014 gateway is offline, so this is likely a site-level outage, not a logger fault.";
-      return "Stopped reporting \u2014 likely a logger issue (battery, moved, or faulty).";
+        return "Not reporting. Gateway is offline, so this is likely a site-level outage, not a logger fault.";
+      return "Stopped reporting, likely a logger issue (battery, moved, or faulty).";
     }
     return "No data found for this sensor.";
   }
@@ -467,7 +463,7 @@
 
       let pills = "";
       if (s.gateway_status) {
-        var gwLabel = s.gateway_status === "warn" ? "Gateway NOT CONFIRMED" : "Gateway " + s.gateway_status.toUpperCase();
+        var gwLabel = s.gateway_status === "warn" ? "Gateway NOT UPDATING" : "Gateway " + s.gateway_status.toUpperCase();
         pills += pill(s.gateway_status, gwLabel);
       }
       if (s.fetch_status && s.fetch_status !== "unknown") {
