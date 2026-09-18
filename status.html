@@ -352,6 +352,14 @@
     return display + (age ? "<br><span class='meta-age'>" + age + "</span>" : "");
   }
 
+  function fmtDowntime(isoUtc) {
+    var h = liveAgeH(isoUtc);
+    if (h === null) return "";
+    if (h < 1)  return " (" + Math.round(h * 60) + " min)";
+    if (h < 48) return " (" + h.toFixed(1) + "h)";
+    return " (" + (h / 24).toFixed(1) + "d)";
+  }
+
   function explainCard(s, staleN, totalN) {
     var f = s.fetch_status || "unknown";
     var d = (staleN !== undefined && staleN > 0) ? "stale" : (s.data_status || "unknown");
@@ -359,21 +367,27 @@
 
     // Gateway-aware explanations for Omnisense sources
     if (g) {
+      var gwDown = fmtDowntime(s.gateway_date_utc);
       var gOnline = (g === "ok");
       var gRecent = (g === "ok" || g === "warn");
       if (gOnline && f === "ok" && d === "ok")
         return "Gateway, pipeline and sensors are all working normally.";
       if (g === "warn" && f === "ok" && d === "ok")
-        return "Gateway was recently online but hasn\u2019t reported in the last hour. Pipeline and sensors are current.";
-      if (gRecent && f === "ok" && d === "stale") {
+        return "Gateway hasn\u2019t reported in the last hour" + gwDown + " \u2014 likely a short internet interruption. Pipeline and sensor data are current.";
+      if (g === "warn" && f === "ok" && d === "stale") {
+        if (staleN !== undefined)
+          return "The gateway hasn\u2019t reported recently" + gwDown + " and " + staleN + " of " + totalN + " sensors have stopped reporting \u2014 likely individual logger issues. The pipeline itself is running fine.";
+        return "The gateway hasn\u2019t reported recently" + gwDown + " and the sensor has stopped sending readings \u2014 likely a logger issue.";
+      }
+      if (gOnline && f === "ok" && d === "stale") {
         if (staleN !== undefined)
           return "The gateway is online and the pipeline ran, but " + staleN + " of " + totalN + " sensors have stopped reporting \u2014 likely individual logger issues (battery, moved, or faulty).";
         return "The gateway is online and the pipeline ran, but the sensor has stopped sending readings \u2014 likely a logger issue (battery, moved, or faulty).";
       }
       if (g === "stale" && d === "stale")
-        return "The gateway itself has gone offline \u2014 this is likely a site-level issue (power cut or internet outage) affecting all sensors. When connectivity returns, data may backfill if the loggers kept recording locally.";
+        return "The gateway itself has gone offline" + gwDown + " \u2014 this is likely a site-level issue (power cut or internet outage) affecting all sensors. When connectivity returns, data may backfill if the loggers kept recording locally.";
       if (g === "stale" && d === "ok")
-        return "The gateway appears offline but data was current at last check. It may have gone down very recently.";
+        return "The gateway appears offline" + gwDown + " but data was current at last check. It may have gone down very recently.";
     }
 
     // Non-gateway sources
