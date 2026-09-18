@@ -426,7 +426,10 @@
       .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(data => {
         render(data);
-        if (btn) { btn.textContent = "\u21BB Refresh"; btn.disabled = false; }
+        if (btn) {
+          btn.textContent = "\u2713 Refreshed";
+          setTimeout(function() { btn.textContent = "\u21BB Refresh"; btn.disabled = false; }, 2000);
+        }
       })
       .catch(err => {
         document.getElementById("meta").textContent = "Could not load status.json: " + err;
