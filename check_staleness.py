@@ -107,6 +107,15 @@ UK_LOGGER_NAMES = {
     "0E3C12EC": "Holywell Barn: Living Room",
 }
 
+# Gateway (hub) sensor IDs - the "Performance stats" block in the CSV.
+# These report rx_count, sensor_count and timestamps; if the gateway is stale
+# but sensors are too, the gateway is the likely cause (power or internet).
+GATEWAY_IDS = {
+    "tz": "B3CE8C7C",
+    "uk": "6BC66BE6",
+}
+GATEWAY_THRESHOLD_H = 24  # flag if gateway hasn't reported in over a day
+
 ROOM_TH_LOGGER_NAMES = {
     "320E02D1": "Weather Station T&RH",
     "327601CB": "Bedroom 2",
@@ -285,7 +294,7 @@ def age_status(dt, threshold_h):
     return ("ok" if age_h <= threshold_h else "stale"), round(age_h, 1)
 
 
-def entry(key: str, fetch_dt, data_dt) -> dict:
+def entry(key: str, fetch_dt, data_dt, gateway_dt=None) -> dict:
     label = LABELS[key]
     note = NOTES.get(key, "")
 
@@ -299,7 +308,7 @@ def entry(key: str, fetch_dt, data_dt) -> dict:
     else:
         overall = "ok"
 
-    return dict(
+    d = dict(
         key=key,
         label=label,
         status=overall,
@@ -311,6 +320,18 @@ def entry(key: str, fetch_dt, data_dt) -> dict:
         data_status=data_status,
         note=note,
     )
+
+    # Gateway status - only for Omnisense sources that have a hub
+    if gateway_dt is not None:
+        gw_status, gw_age = age_status(gateway_dt, GATEWAY_THRESHOLD_H)
+        d["gateway_date"] = gateway_dt.strftime("%Y-%m-%d %H:%M UTC")
+        d["gateway_age_hours"] = gw_age
+        d["gateway_status"] = gw_status
+        if gw_status == "stale":
+            overall = "stale"
+            d["status"] = overall
+
+    return d
 
 
 # ── main ───────────────────────────────────────────────────────────────────────
@@ -324,14 +345,19 @@ def run():
     omni_files = sorted(glob.glob(os.path.join(DATA, "omnisense", "omnisense_*.csv")))
     omni_fetch_dt = file_date_from_glob("omnisense/omnisense_*.csv")
     omni_latest = omni_files[-1] if omni_files else None
+    # Gateway (hub) latest timestamp - shared by all TZ sensors
+    tz_gw_dt = latest_iso_in_file(omni_latest, col=2,
+                                   match_col=0, match_vals=GATEWAY_IDS["tz"])
     sources.append(entry("omnisense_weather",
         fetch_dt=omni_fetch_dt,
         data_dt=latest_iso_in_file(omni_latest, col=2,
-                                    match_col=0, match_vals=WEATHER_STATION_SENSOR_ID)))
+                                    match_col=0, match_vals=WEATHER_STATION_SENSOR_ID),
+        gateway_dt=tz_gw_dt))
     th_entry = entry("omnisense_temp_humid",
         fetch_dt=omni_fetch_dt,
         data_dt=latest_iso_in_file(omni_latest, col=2,
-                                    match_col=0, match_vals=ROOM_TH_SENSOR_IDS))
+                                    match_col=0, match_vals=ROOM_TH_SENSOR_IDS),
+        gateway_dt=tz_gw_dt)
     th_per_sensor = latest_iso_per_id_in_file(omni_latest, col=2, id_col=0, ids=ROOM_TH_SENSOR_IDS)
     th_threshold = DATA_THRESHOLD_H["omnisense_temp_humid"]
     th_entry["series"] = []
@@ -357,10 +383,13 @@ def run():
     # Omnisense, ARC UK - separate site, separate export, same shape
     uk_files = sorted(glob.glob(os.path.join(DATA, "omnisense_uk", "omnisense_uk_*.csv")))
     uk_latest = uk_files[-1] if uk_files else None
+    uk_gw_dt = latest_iso_in_file(uk_latest, col=2,
+                                   match_col=0, match_vals=GATEWAY_IDS["uk"])
     uk_entry = entry("omnisense_uk",
         fetch_dt=file_date_from_glob("omnisense_uk/omnisense_uk_*.csv"),
         data_dt=latest_iso_in_file(uk_latest, col=2,
-                                   match_col=0, match_vals=UK_SENSOR_IDS))
+                                   match_col=0, match_vals=UK_SENSOR_IDS),
+        gateway_dt=uk_gw_dt)
     uk_per_sensor = latest_iso_per_id_in_file(uk_latest, col=2, id_col=0, ids=UK_SENSOR_IDS)
     uk_threshold = DATA_THRESHOLD_H["omnisense_uk"]
     uk_entry["series"] = []

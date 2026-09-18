@@ -177,6 +177,7 @@
       padding-top: 10px;
       border-top: 1px solid rgba(0,0,0,0.05);
     }
+    .source-meta.has-gateway { grid-template-columns: 1fr 1fr 1fr; }
     .meta-label {
       display: block;
       font-size: 10px;
@@ -353,6 +354,24 @@
   function explainCard(s, staleN, totalN) {
     var f = s.fetch_status || "unknown";
     var d = (staleN !== undefined && staleN > 0) ? "stale" : (s.data_status || "unknown");
+    var g = s.gateway_status;  // undefined for non-Omnisense sources
+
+    // Gateway-aware explanations for Omnisense sources
+    if (g) {
+      if (g === "ok" && f === "ok" && d === "ok")
+        return "Gateway, pipeline and sensors are all working normally.";
+      if (g === "ok" && f === "ok" && d === "stale") {
+        if (staleN !== undefined)
+          return "The gateway is online and the pipeline ran, but " + staleN + " of " + totalN + " sensors have stopped reporting \u2014 likely individual logger issues (battery, moved, or faulty).";
+        return "The gateway is online and the pipeline ran, but the sensor has stopped sending readings \u2014 likely a logger issue (battery, moved, or faulty).";
+      }
+      if (g === "stale" && d === "stale")
+        return "The gateway itself has gone offline \u2014 this is likely a site-level issue (power cut or internet outage) affecting all sensors. When connectivity returns, data may backfill if the loggers kept recording locally.";
+      if (g === "stale" && d === "ok")
+        return "The gateway appears offline but data was current at last check. It may have gone down very recently.";
+    }
+
+    // Non-gateway sources
     if (f === "ok" && d === "ok")
       return "The pipeline fetched new data successfully and readings are current.";
     if (f === "ok" && d === "stale") {
@@ -371,9 +390,13 @@
     return "Status could not be determined for this source.";
   }
 
-  function explainSensor(x) {
+  function explainSensor(x, gwStatus) {
     if (x.data_status === "ok") return "Reporting normally.";
-    if (x.data_status === "stale") return "Stopped reporting \u2014 may be offline or disconnected.";
+    if (x.data_status === "stale") {
+      if (gwStatus === "stale")
+        return "Not reporting \u2014 gateway is offline, so this is likely a site-level outage, not a logger fault.";
+      return "Stopped reporting \u2014 likely a logger issue (battery, moved, or faulty).";
+    }
     return "No data found for this sensor.";
   }
 
@@ -424,6 +447,9 @@
       }
 
       let pills = "";
+      if (s.gateway_status) {
+        pills += pill(s.gateway_status, "Gateway " + s.gateway_status.toUpperCase());
+      }
       if (s.fetch_status && s.fetch_status !== "unknown") {
         pills += pill(s.fetch_status, "Fetch " + s.fetch_status.toUpperCase());
       }
@@ -437,7 +463,7 @@
           "<div class='series-row'>" +
             "<span class='series-info'>" +
               "<span>" + x.label + "</span>" +
-              "<span class='series-explain'>" + explainSensor(x) + "</span>" +
+              "<span class='series-explain'>" + explainSensor(x, s.gateway_status) + "</span>" +
             "</span>" +
             "<span class='series-age'>" + (fmtAge(liveAgeH(x.data_date)) || "&mdash;") + "</span>" +
             pill(x.data_status, x.data_status || "unknown", "sm") +
@@ -457,7 +483,8 @@
         "</div>" +
         "<div class='source-explain'>" + cardExplain + "</div>" +
         (s.note ? "<div class='source-note'>" + s.note + "</div>" : "") +
-        "<div class='source-meta'>" +
+        "<div class='source-meta" + (s.gateway_date ? " has-gateway" : "") + "'>" +
+          (s.gateway_date ? "<div><span class='meta-label'>Gateway</span><span class='meta-val'>" + fmtCell(s.gateway_date) + "</span></div>" : "") +
           "<div><span class='meta-label'>Last fetched</span><span class='meta-val'>" + fmtCell(s.fetch_date) + "</span></div>" +
           "<div><span class='meta-label'>Latest data</span><span class='meta-val'>" + fmtCell(s.data_date) + "</span></div>" +
         "</div>" +
