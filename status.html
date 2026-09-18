@@ -167,6 +167,7 @@
       margin-bottom: 4px;
     }
     .source-name { font-size: 14.5px; font-weight: 400; color: #111; }
+    .source-explain { font-size: 12.5px; font-weight: 300; color: #666; line-height: 1.45; margin-bottom: 6px; }
     .source-note { font-size: 12px; color: #bbb; margin-bottom: 10px; line-height: 1.4; }
     .pill-row { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
     .source-meta {
@@ -239,6 +240,8 @@
       font-size: 12.5px;
       color: #444;
     }
+    .series-row .series-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .series-row .series-explain { font-size: 10.5px; font-weight: 300; color: #aaa; line-height: 1.3; }
     .series-row .series-age { font-size: 11px; color: #bbb; flex-shrink: 0; }
 
     /* ── refresh button ────────────────────────────────────────────────────── */
@@ -347,6 +350,33 @@
     return date + (age ? "<br><span class='meta-age'>" + age + "</span>" : "");
   }
 
+  function explainCard(s, staleN, totalN) {
+    var f = s.fetch_status || "unknown";
+    var d = (staleN !== undefined && staleN > 0) ? "stale" : (s.data_status || "unknown");
+    if (f === "ok" && d === "ok")
+      return "The pipeline fetched new data successfully and readings are current.";
+    if (f === "ok" && d === "stale") {
+      if (staleN !== undefined)
+        return staleN + " of " + totalN + " sensors have stopped reporting \u2014 they may be offline or disconnected. The pipeline itself is running fine.";
+      return "The pipeline is running fine, but the sensor has stopped sending new readings \u2014 it may be offline or disconnected.";
+    }
+    if (f === "stale" && d === "ok")
+      return "The pipeline hasn\u2019t run recently, but data was current at last check. The scheduled job may have failed.";
+    if (f === "stale" && d === "stale")
+      return "The pipeline hasn\u2019t run recently and sensor data is outdated. Check whether the scheduled job and the sensor are both working.";
+    if (f === "unknown" && d === "ok")
+      return "Data is up to date.";
+    if (f === "unknown" && d === "stale")
+      return "This dataset hasn\u2019t been updated within its expected window \u2014 the upstream provider may be delayed.";
+    return "Status could not be determined for this source.";
+  }
+
+  function explainSensor(x) {
+    if (x.data_status === "ok") return "Reporting normally.";
+    if (x.data_status === "stale") return "Stopped reporting \u2014 may be offline or disconnected.";
+    return "No data found for this sensor.";
+  }
+
   function pill(status, text, extraClass) {
     return "<span class='pill " + (status || "unknown") + (extraClass ? " " + extraClass : "") + "'>" + text + "</span>";
   }
@@ -399,11 +429,16 @@
       }
       pills += pill(dataPillStatus, dataPillText);
 
+      var cardExplain = explainCard(s, staleN, s.series ? s.series.length : undefined);
+
       let seriesHtml = "";
       if (s.series && s.series.length > 1) {
         const seriesRows = s.series.map(x =>
           "<div class='series-row'>" +
-            "<span>" + x.label + "</span>" +
+            "<span class='series-info'>" +
+              "<span>" + x.label + "</span>" +
+              "<span class='series-explain'>" + explainSensor(x) + "</span>" +
+            "</span>" +
             "<span class='series-age'>" + (fmtAge(liveAgeH(x.data_date)) || "&mdash;") + "</span>" +
             pill(x.data_status, x.data_status || "unknown", "sm") +
           "</div>"
@@ -420,6 +455,7 @@
           "<span class='source-name'>" + s.label + "</span>" +
           "<div class='pill-row'>" + pills + "</div>" +
         "</div>" +
+        "<div class='source-explain'>" + cardExplain + "</div>" +
         (s.note ? "<div class='source-note'>" + s.note + "</div>" : "") +
         "<div class='source-meta'>" +
           "<div><span class='meta-label'>Last fetched</span><span class='meta-val'>" + fmtCell(s.fetch_date) + "</span></div>" +
