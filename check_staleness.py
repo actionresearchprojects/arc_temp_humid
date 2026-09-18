@@ -33,10 +33,35 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, "data")
 NOW = datetime.now(timezone.utc)
+
+# ── timezones ─────────────────────────────────────────────────────────────────
+# Each source's data timestamps are in the site's local (wall-clock) time.
+# Omnisense exports record sensor readings in the site's timezone; Open-Meteo
+# is fetched with &timezone=<IANA> so its CSVs are also in local time.
+# Fetch timestamps (from filenames) are always UTC.
+# Climate-cycle sources are dates only so timezone is immaterial.
+
+TZ_EAT = ZoneInfo("Africa/Dar_es_Salaam")
+TZ_UK  = ZoneInfo("Europe/London")
+
+# Timezone that each source's *data* timestamps are recorded in.
+# Also used as the display timezone.
+SOURCE_TZ = {
+    "omnisense_weather":       TZ_EAT,
+    "omnisense_temp_humid":    TZ_EAT,
+    "omnisense_uk":            TZ_UK,
+    "openmeteo_hist":          TZ_EAT,
+    "openmeteo_fc":            TZ_EAT,
+    "openmeteo_grove_hist":    TZ_UK,
+    "openmeteo_grove_fc":      TZ_UK,
+    "openmeteo_holywell_hist": TZ_UK,
+    "openmeteo_holywell_fc":   TZ_UK,
+}
 
 # ── thresholds ─────────────────────────────────────────────────────────────────
 
@@ -114,7 +139,8 @@ UK_LOGGER_NAMES = {
 # (6BC66BE6) is an Omnisense platform artifact with factory-default coords
 # and zero rx_count - not a physical device at the UK sites.
 GATEWAY_ID_TZ = "B3CE8C7C"
-GATEWAY_THRESHOLD_H = 24  # flag if gateway hasn't reported in over a day
+GATEWAY_THRESHOLD_H = 24   # stale: flag if gateway hasn't reported in over a day
+GATEWAY_WARN_H = 1         # warn: not demonstrably online right now (>1h, <24h)
 
 ROOM_TH_LOGGER_NAMES = {
     "320E02D1": "Weather Station T&RH",
@@ -134,7 +160,34 @@ ROOM_TH_LOGGER_NAMES = {
 # ── helpers ────────────────────────────────────────────────────────────────────
 
 def utc(dt: datetime) -> datetime:
+    """Stamp a naive datetime as UTC."""
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def localise(dt, tz):
+    """Re-interpret a naive-or-UTC datetime as actually being in `tz`.
+
+    The CSV parser stamps everything UTC, but Omnisense and Open-Meteo
+    timestamps are really in the site's local time. This strips the
+    incorrect UTC and attaches the correct timezone, so the resulting
+    datetime represents the right moment in time."""
+    if dt is None or tz is None:
+        return dt
+    return dt.replace(tzinfo=tz)
+
+
+def fmt_local(dt, tz):
+    """Format a tz-aware datetime in `tz` with its abbreviation, e.g.
+    '2026-09-18 11:53 EAT'. Also returns an ISO-8601 UTC string for JS."""
+    if dt is None:
+        return None, None
+    if tz:
+        local = dt.astimezone(tz)
+    else:
+        local = dt.astimezone(timezone.utc)
+    display = local.strftime("%Y-%m-%d %H:%M ") + local.strftime("%Z")
+    iso_utc = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    return display, iso_utc
 
 
 def file_date_from_glob(pattern: str):
@@ -297,6 +350,13 @@ def age_status(dt, threshold_h):
 def entry(key: str, fetch_dt, data_dt, gateway_dt=None) -> dict:
     label = LABELS[key]
     note = NOTES.get(key, "")
+    tz = SOURCE_TZ.get(key)  # display/data timezone (None → UTC)
+
+    # Localise data timestamps: they were parsed as UTC but are actually in
+    # the site's local timezone. Fetch timestamps (from filenames) are truly
+    # UTC and don't need re-interpretation.
+    data_dt = localise(data_dt, tz)
+    gateway_dt = localise(gateway_dt, tz)
 
     fetch_status, fetch_age = age_status(fetch_dt, FETCH_THRESHOLD_H)
     data_status,  data_age  = age_status(data_dt,  DATA_THRESHOLD_H[key])
@@ -308,14 +368,19 @@ def entry(key: str, fetch_dt, data_dt, gateway_dt=None) -> dict:
     else:
         overall = "ok"
 
+    fetch_display, fetch_iso = fmt_local(fetch_dt, tz)
+    data_display,  data_iso  = fmt_local(data_dt, tz)
+
     d = dict(
         key=key,
         label=label,
         status=overall,
-        fetch_date=fetch_dt.strftime("%Y-%m-%d %H:%M UTC") if fetch_dt else None,
+        fetch_date=fetch_display,
+        fetch_date_utc=fetch_iso,
         fetch_age_hours=fetch_age,
         fetch_status=fetch_status,
-        data_date=data_dt.strftime("%Y-%m-%d %H:%M UTC") if data_dt else None,
+        data_date=data_display,
+        data_date_utc=data_iso,
         data_age_hours=data_age,
         data_status=data_status,
         note=note,
@@ -324,7 +389,12 @@ def entry(key: str, fetch_dt, data_dt, gateway_dt=None) -> dict:
     # Gateway status - only for Omnisense sources that have a hub
     if gateway_dt is not None:
         gw_status, gw_age = age_status(gateway_dt, GATEWAY_THRESHOLD_H)
-        d["gateway_date"] = gateway_dt.strftime("%Y-%m-%d %H:%M UTC")
+        # Warn (orange) if not demonstrably online right now
+        if gw_status == "ok" and gw_age is not None and gw_age > GATEWAY_WARN_H:
+            gw_status = "warn"
+        gw_display, gw_iso = fmt_local(gateway_dt, tz)
+        d["gateway_date"] = gw_display
+        d["gateway_date_utc"] = gw_iso
         d["gateway_age_hours"] = gw_age
         d["gateway_status"] = gw_status
         if gw_status == "stale":
@@ -362,12 +432,14 @@ def run():
     th_threshold = DATA_THRESHOLD_H["omnisense_temp_humid"]
     th_entry["series"] = []
     for sid in sorted(ROOM_TH_SENSOR_IDS, key=lambda i: ROOM_TH_LOGGER_NAMES.get(i, i)):
-        dt = th_per_sensor.get(sid)
+        dt = localise(th_per_sensor.get(sid), TZ_EAT)
         status, age = age_status(dt, th_threshold)
+        dd, dd_utc = fmt_local(dt, TZ_EAT)
         th_entry["series"].append(dict(
             id=sid,
             label=ROOM_TH_LOGGER_NAMES.get(sid, sid),
-            data_date=dt.strftime("%Y-%m-%d %H:%M UTC") if dt else None,
+            data_date=dd,
+            data_date_utc=dd_utc,
             data_age_hours=age,
             data_status=status,
         ))
@@ -391,12 +463,14 @@ def run():
     uk_threshold = DATA_THRESHOLD_H["omnisense_uk"]
     uk_entry["series"] = []
     for sid in sorted(UK_SENSOR_IDS, key=lambda i: UK_LOGGER_NAMES.get(i, i)):
-        dt = uk_per_sensor.get(sid)
+        dt = localise(uk_per_sensor.get(sid), TZ_UK)
         status, age = age_status(dt, uk_threshold)
+        dd, dd_utc = fmt_local(dt, TZ_UK)
         uk_entry["series"].append(dict(
             id=sid,
             label=UK_LOGGER_NAMES.get(sid, sid),
-            data_date=dt.strftime("%Y-%m-%d %H:%M UTC") if dt else None,
+            data_date=dd,
+            data_date_utc=dd_utc,
             data_age_hours=age,
             data_status=status,
         ))
@@ -439,6 +513,7 @@ def run():
 
     result = {
         "checked_at": NOW.strftime("%Y-%m-%d %H:%M UTC"),
+        "checked_at_utc": NOW.strftime("%Y-%m-%dT%H:%MZ"),
         "overall": overall,
         "sources": sources,
     }
