@@ -321,6 +321,19 @@
   const JSON_URL = "status.json";
   const REFRESH_MS = 5 * 60 * 1000;
 
+  function parseUTC(s) {
+    if (!s) return null;
+    var m = s.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+UTC$/);
+    return m ? new Date(m[1] + "T" + m[2] + "Z") : null;
+  }
+
+  function liveAgeH(dateStr) {
+    var d = parseUTC(dateStr);
+    if (!d) return null;
+    var h = (Date.now() - d.getTime()) / 3600000;
+    return h >= 0 ? h : null;
+  }
+
   function fmtAge(h) {
     if (h === null || h === undefined) return null;
     if (h < 1)  return Math.round(h * 60) + " min ago";
@@ -328,9 +341,9 @@
     return (h / 24).toFixed(1) + "d ago";
   }
 
-  function fmtCell(date, age_h) {
+  function fmtCell(date) {
     if (!date) return "<span style='color:#ddd'>-</span>";
-    const age = fmtAge(age_h);
+    var age = fmtAge(liveAgeH(date));
     return date + (age ? "<br><span class='meta-age'>" + age + "</span>" : "");
   }
 
@@ -352,8 +365,10 @@
     document.getElementById("overall-text").textContent =
       overall === "ok" ? "All systems operational" : "⚠️ Data source issue detected";
 
+    var checkedAgo = fmtAge(liveAgeH(data.checked_at));
     document.getElementById("meta").innerHTML =
-      "Last checked: <strong style='font-weight:400;color:#555'>" + (data.checked_at || "unknown") + "</strong>";
+      "Last checked: <strong style='font-weight:400;color:#555'>" + (data.checked_at || "unknown") + "</strong>" +
+      (checkedAgo ? " <span style='color:#bbb'>(" + checkedAgo + ")</span>" : "");
 
     const rows = document.getElementById("rows");
     rows.innerHTML = "";
@@ -365,18 +380,31 @@
       // (fetch_status) vs. is the underlying data itself current
       // (data_status) - these can disagree, and conflating them into one
       // pill is exactly what hid a dead sensor behind a "fine" status before.
+      var dataPillStatus = s.data_status || "unknown";
+      var dataPillText = "Data " + dataPillStatus.toUpperCase();
+
+      // For multi-sensor cards, derive the pill from individual sensors
+      // so a few live sensors can't mask many stale ones.
+      if (s.series && s.series.length > 1) {
+        var staleN = s.series.filter(function(x) { return x.data_status === "stale"; }).length;
+        if (staleN > 0) {
+          dataPillStatus = "stale";
+          dataPillText = "Data " + staleN + "/" + s.series.length + " STALE";
+        }
+      }
+
       let pills = "";
       if (s.fetch_status && s.fetch_status !== "unknown") {
         pills += pill(s.fetch_status, "Fetch " + s.fetch_status.toUpperCase());
       }
-      pills += pill(s.data_status, "Data " + (s.data_status || "unknown").toUpperCase());
+      pills += pill(dataPillStatus, dataPillText);
 
       let seriesHtml = "";
       if (s.series && s.series.length > 1) {
         const seriesRows = s.series.map(x =>
           "<div class='series-row'>" +
             "<span>" + x.label + "</span>" +
-            "<span class='series-age'>" + (fmtAge(x.data_age_hours) || "&mdash;") + "</span>" +
+            "<span class='series-age'>" + (fmtAge(liveAgeH(x.data_date)) || "&mdash;") + "</span>" +
             pill(x.data_status, x.data_status || "unknown", "sm") +
           "</div>"
         ).join("");
@@ -394,8 +422,8 @@
         "</div>" +
         (s.note ? "<div class='source-note'>" + s.note + "</div>" : "") +
         "<div class='source-meta'>" +
-          "<div><span class='meta-label'>Last fetched</span><span class='meta-val'>" + fmtCell(s.fetch_date, s.fetch_age_hours) + "</span></div>" +
-          "<div><span class='meta-label'>Latest data</span><span class='meta-val'>" + fmtCell(s.data_date, s.data_age_hours) + "</span></div>" +
+          "<div><span class='meta-label'>Last fetched</span><span class='meta-val'>" + fmtCell(s.fetch_date) + "</span></div>" +
+          "<div><span class='meta-label'>Latest data</span><span class='meta-val'>" + fmtCell(s.data_date) + "</span></div>" +
         "</div>" +
         seriesHtml;
       rows.appendChild(card);

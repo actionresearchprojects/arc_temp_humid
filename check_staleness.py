@@ -345,6 +345,13 @@ def run():
             data_age_hours=age,
             data_status=status,
         ))
+    # Card-level data_status must reflect individual sensors: if any sensor
+    # in the series is stale the card should say so, not hide it behind the
+    # single newest reading across the group.
+    stale_n = sum(1 for x in th_entry["series"] if x["data_status"] == "stale")
+    if stale_n:
+        th_entry["data_status"] = "stale"
+        th_entry["status"] = "stale"
     sources.append(th_entry)
 
     # Omnisense, ARC UK - separate site, separate export, same shape
@@ -367,6 +374,10 @@ def run():
             data_age_hours=age,
             data_status=status,
         ))
+    stale_n = sum(1 for x in uk_entry["series"] if x["data_status"] == "stale")
+    if stale_n:
+        uk_entry["data_status"] = "stale"
+        uk_entry["status"] = "stale"
     sources.append(uk_entry)
 
     # Open-Meteo - timestamped filenames → fetch date available. One feed per
