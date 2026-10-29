@@ -2353,6 +2353,8 @@ function getCompareIterations() {
 
 function isOpenMeteo(id) { return id && id.indexOf('(Open-Meteo)') !== -1; }
 function isForecast(id) { return id && id.indexOf('Forecast') !== -1 && isOpenMeteo(id); }
+const LOGGER_SERIAL = {'tinytag':'759498'};
+function displayId(lid) { return LOGGER_SERIAL[lid] || lid; }
 
 // Stull (2011) wet-bulb approximation - accurate to ±0.3°C for tropical conditions
 // Valid range: T -20 to 50°C, RH 5 to 99%
@@ -4760,7 +4762,7 @@ function renderLineGraph() {
       const isExtTT = extSet.has(loggerId) && m.loggerSources[loggerId] === 'TinyTag';
       const name = namePrefix + lnb(loggerId, true) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
       const source = m.loggerSources[loggerId] || '';
-      const idLabel = (loggerId === 'govee' || isOpenMeteo(loggerId)) ? '' : ` · ID: ${loggerId}`;
+      const idLabel = (loggerId === 'govee' || isOpenMeteo(loggerId)) ? '' : ` · ID: ${displayId(loggerId)}`;
       const freqLabel = state.historicMode
         ? (isOpenMeteo(loggerId) ? ' <span style="color:#aaa">(hourly avg.)</span>'
           : source === 'TinyTag' ? ' <span style="color:#aaa">(hourly avg.)</span>'
@@ -4783,7 +4785,7 @@ function renderLineGraph() {
           for (const v of y) { if (v != null) { if (v < yMin) yMin = v; if (v > yMax) yMax = v; } }
           const unit = metric === 'temperature' ? '°C' : '%RH';
           traces.push({x, y, type:'scatter', mode:'lines', name: name + meteoSuffix(loggerId) + omniSuffix(source) + freqLabel + (firstMetric ? _wbAnnotation : ''), line:{color, width:1.4},
-            opacity:0.35, connectgaps:false, legendgroup:lgGroup, showlegend:(!iter.setLabel && firstMetric), meta:{loggerId, unit},
+            opacity:0.35, connectgaps:false, legendgroup:lgGroup, showlegend:(!iter.setLabel && firstMetric), meta:{loggerId:displayId(loggerId), unit},
             hovertemplate:`${name}<br>%{x|%d/%m/%Y %H:%M}<br>${metric==='temperature'?t('tempOnly'):t('humidOnly')}: %{y:.1f}${unit}<br>${t('source')}: ${source}${idLabel}<extra></extra>`});
           firstMetric = false;
         }
@@ -4816,7 +4818,7 @@ function renderLineGraph() {
           : `${t('tempOnly')}: ${_tSrc}<br>${t('humidOnly')}: ${_rhSrc}`;
         traces.push({x: wbX, y: wbYArr, type:'scatter', mode:'lines',
           name: wbName, line:{color, width:1.4, dash:'dash'},
-          opacity:0.35, connectgaps:false, legendgroup: _mainSelected ? lgGroup : lgGroup + '_wb', showlegend: !_mainSelected && !iter.setLabel, meta:{loggerId},
+          opacity:0.35, connectgaps:false, legendgroup: _mainSelected ? lgGroup : lgGroup + '_wb', showlegend: !_mainSelected && !iter.setLabel, meta:{loggerId:displayId(loggerId)},
           hovertemplate:`${wbName}<br>%{x|%d/%m/%Y %H:%M}<br>${t('wetBulbHover')}: %{y:.1f}°C<br>${_srcHover}<extra></extra>`});
       }
     }
@@ -5121,7 +5123,7 @@ function renderHistogram() {
           marker: {color, opacity: state.histogramBarmode === 'overlay' ? 0.55 : 0.85},
           legendgroup: lgGroup,
           showlegend: (!iter.setLabel && firstMetric),
-          meta: {loggerId, unit},
+          meta: {loggerId: displayId(loggerId), unit},
           hovertemplate: `${name}<br>%{x:.1f}${unit}: %{y:.1%} of readings<extra></extra>`,
         });
         firstMetric = false;
@@ -5467,7 +5469,7 @@ function renderAdaptiveComfort() {
       }
       const color = iter.colorMap[loggerId] || m.colors[loggerId];
       const cSource = m.loggerSources[loggerId] || '';
-      const cIdLabel = loggerId === 'govee' ? '' : ` · ID: ${loggerId}`;
+      const cIdLabel = loggerId === 'govee' ? '' : ` · ID: ${displayId(loggerId)}`;
       const cName = namePrefix + lnb(loggerId, true) + meteoSuffix(loggerId) + omniSuffix(cSource);
 
       if (isCompare) {
@@ -5494,11 +5496,11 @@ function renderAdaptiveComfort() {
         }
         traces.push({x:filtered.extTemp, y:filtered.temperature, type:'scatter', mode:'markers',
           name:cName, marker:{color: ptColors, size:4, opacity:0.2},
-          legendgroup:lgGroup, showlegend:false, meta:{loggerId}, customdata,
+          legendgroup:lgGroup, showlegend:false, meta:{loggerId:displayId(loggerId)}, customdata,
           hovertemplate:`${lnb(loggerId)}<br>${t('dateTime')}: %{customdata[0]}<br>${t('runningMean')}: %{x:.1f}°C<br>${t('roomTemp')}: %{y:.1f}°C<br>${t('extSource')}: %{customdata[1]}<br>${t('sensor')}: ${cSource}${cIdLabel}<extra></extra>`});
         traces.push({x:[null], y:[null], type:'scatter', mode:'markers',
           name:cName, marker:{color, size:10, opacity:0.8, symbol:'square', line:{width:0}},
-          legendgroup:lgGroup, showlegend:true, hoverinfo:'skip', meta:{loggerId}});
+          legendgroup:lgGroup, showlegend:true, hoverinfo:'skip', meta:{loggerId:displayId(loggerId)}});
       }
     }
 
@@ -7831,7 +7833,7 @@ function renderPeriodicAverages() {
       const source = m.loggerSources[loggerId] || '';
       const isExtTT = extSet.has(loggerId) && source === 'TinyTag';
       const logName = namePrefix + lnb(loggerId, true) + (isExtTT ? ' <span style="color:#aaa">(TinyTag)</span>' : '');
-      const idLabel = (loggerId === 'govee' || isOpenMeteo(loggerId)) ? '' : ' \u00b7 ID: ' + loggerId;
+      const idLabel = (loggerId === 'govee' || isOpenMeteo(loggerId)) ? '' : ' \u00b7 ID: ' + displayId(loggerId);
       const lgGroup = iter.setLabel ? 'compare_s' + iter.setIndex : loggerId;
       let firstMetric = true;
       const _wbAnnotation = doWb ? ' <span style="color:#aaa">+ ' + t('wetBulbSuffix') + '</span>' : '';
@@ -7863,7 +7865,7 @@ function renderPeriodicAverages() {
           x, y, text: txt, type: 'scatter',
           name: logName + meteoSuffix(loggerId) + omniSuffix(source) + (firstMetric ? _wbAnnotation : ''),
           legendgroup: lgGroup, showlegend: (!iter.setLabel && firstMetric),
-          meta: {loggerId, unit},
+          meta: {loggerId: displayId(loggerId), unit},
           hovertemplate: hoverTpl,
         };
         if (isClimateOsc) {
@@ -7898,7 +7900,7 @@ function renderPeriodicAverages() {
           traces.push({
             x: wbX, y: wbYArr, text: wbTxt, type: 'scatter', mode: 'lines+markers',
             name: wbName, legendgroup: lgGroup, showlegend: false,
-            meta: {loggerId},
+            meta: {loggerId: displayId(loggerId)},
             line: {color, width: 2, dash: 'dash'}, marker: {size: 5}, connectgaps: false,
             hovertemplate: wbName + '<br>%{text}<br>' + t('wetBulbHover') + ': %{y:.1f}°C<extra></extra>',
           });
