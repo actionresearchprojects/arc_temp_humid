@@ -3168,6 +3168,8 @@ function chartExportRows() {
     let n = (tr.name ? String(tr.name).replace(/<[^>]*>/g, '').trim() : '') || ('Series ' + (i + 1));
     const lid = tr.meta && tr.meta.loggerId;
     if (lid) n += ' [' + lid + ']';
+    const u = tr.meta && tr.meta.unit;
+    if (u) n += ' (' + u + ')';
     return n;
   });
 
@@ -4781,7 +4783,7 @@ function renderLineGraph() {
           for (const v of y) { if (v != null) { if (v < yMin) yMin = v; if (v > yMax) yMax = v; } }
           const unit = metric === 'temperature' ? '°C' : '%RH';
           traces.push({x, y, type:'scatter', mode:'lines', name: name + meteoSuffix(loggerId) + omniSuffix(source) + freqLabel + (firstMetric ? _wbAnnotation : ''), line:{color, width:1.4},
-            opacity:0.35, connectgaps:false, legendgroup:lgGroup, showlegend:(!iter.setLabel && firstMetric), meta:{loggerId},
+            opacity:0.35, connectgaps:false, legendgroup:lgGroup, showlegend:(!iter.setLabel && firstMetric), meta:{loggerId, unit},
             hovertemplate:`${name}<br>%{x|%d/%m/%Y %H:%M}<br>${metric==='temperature'?t('tempOnly'):t('humidOnly')}: %{y:.1f}${unit}<br>${t('source')}: ${source}${idLabel}<extra></extra>`});
           firstMetric = false;
         }
@@ -7861,7 +7863,7 @@ function renderPeriodicAverages() {
           x, y, text: txt, type: 'scatter',
           name: logName + meteoSuffix(loggerId) + omniSuffix(source) + (firstMetric ? _wbAnnotation : ''),
           legendgroup: lgGroup, showlegend: (!iter.setLabel && firstMetric),
-          meta: {loggerId},
+          meta: {loggerId, unit},
           hovertemplate: hoverTpl,
         };
         if (isClimateOsc) {
