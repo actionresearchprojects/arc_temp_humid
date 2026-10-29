@@ -9579,10 +9579,8 @@ def load_sensor_snapshot():
         tz = dataset_tz(key)
         dfs = []
         for logger_id, ldata in ds_data["loggers"].items():
-            idx = pd.DatetimeIndex(ldata["timestamps"], name="datetime")
-            # Normalise timezone to match what load_dataset() produces
-            if idx.tz is not None:
-                idx = idx.tz_convert(tz)
+            idx = pd.DatetimeIndex(pd.to_datetime(ldata["timestamps"], utc=True), name="datetime")
+            idx = idx.tz_convert(tz)
             ldf = pd.DataFrame({
                 "temperature": ldata["temperature"],
                 "humidity": ldata["humidity"],
