@@ -9581,7 +9581,7 @@ def load_sensor_snapshot():
         tz = dataset_tz(key)
         dfs = []
         for logger_id, ldata in ds_data["loggers"].items():
-            idx = pd.DatetimeIndex(pd.to_datetime(ldata["timestamps"], utc=True), name="datetime")
+            idx = pd.DatetimeIndex(pd.to_datetime(ldata["timestamps"], utc=True, format="ISO8601"), name="datetime")
             idx = idx.tz_convert(tz)
             ldf = pd.DataFrame({
                 "temperature": ldata["temperature"],
