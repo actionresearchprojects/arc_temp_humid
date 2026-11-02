@@ -9548,9 +9548,8 @@ def update_snapshot_omnisense(key, omnisense_df):
     for logger_id, fresh_ldf in omnisense_df.groupby("logger_id"):
         existing = loggers.get(logger_id, {})
         if existing.get("timestamps"):
-            existing_idx = pd.DatetimeIndex(existing["timestamps"], name="datetime")
-            if existing_idx.tz is not None:
-                existing_idx = existing_idx.tz_convert(tz)
+            existing_idx = pd.DatetimeIndex(pd.to_datetime(existing["timestamps"], utc=True, format="ISO8601"), name="datetime")
+            existing_idx = existing_idx.tz_convert(tz)
             existing_ldf = pd.DataFrame({
                 "temperature": existing["temperature"],
                 "humidity": existing["humidity"],
@@ -9608,9 +9607,8 @@ def load_sensor_snapshot():
             if not df.empty and logger_id in df["logger_id"].values:
                 continue
             ldata = raw[source_key]["loggers"][logger_id]
-            idx = pd.DatetimeIndex(ldata["timestamps"], name="datetime")
-            if idx.tz is not None:
-                idx = idx.tz_convert(dataset_tz(key))
+            idx = pd.DatetimeIndex(pd.to_datetime(ldata["timestamps"], utc=True, format="ISO8601"), name="datetime")
+            idx = idx.tz_convert(dataset_tz(key))
             imported = pd.DataFrame({
                 "temperature": ldata["temperature"],
                 "humidity": ldata["humidity"],
