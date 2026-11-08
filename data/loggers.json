@@ -289,8 +289,19 @@
         "external_source": "External Historical (Open-Meteo)"
       },
       {
+        "id": "32760048_surface",
+        "name": "Bedroom 4 (below metal roof) – Surface temperature",
+        "source": "Omnisense",
+        "section": "structural",
+        "showInLine": true,
+        "showInHistogram": true,
+        "showInPeriodic": true,
+        "showInComfort": false,
+        "external_source": "External Historical (Open-Meteo)"
+      },
+      {
         "id": "32760048",
-        "name": "Bedroom 4 (below metal roof)",
+        "name": "Bedroom 4 (below metal roof) – Ambient adjacent surface",
         "source": "Omnisense",
         "section": "structural",
         "showInLine": true,
