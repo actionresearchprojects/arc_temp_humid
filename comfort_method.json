@@ -1,0 +1,279 @@
+{
+  "_readme": [
+    "Single source of truth for the adaptive-comfort method, the regional seasons and the",
+    "comfort explanation texts. build.py reads this file; ARC Pattern Lab keeps a read-only",
+    "copy and never edits it. Make every change here (website side) first.",
+    "Keys beginning with an underscore are notes and are ignored by build.py."
+  ],
+  "version": 1,
+  "method": {
+    "_note": "Running mean follows EN16798-1. Bands: ASHRAE 55 (80%/90%) and Vellei et al. (2017). Window limits are ASHRAE 55 Section 5.4.1(d). Air-speed allowance is ASHRAE 55 Table 5-13, gated by Section 5.4.2.4.",
+    "runningMeanAlpha": 0.8,
+    "tpmaRange": {
+      "min": 10.0,
+      "max": 33.5
+    },
+    "defaultModelByRegion": {
+      "tz": "rh_gt_60",
+      "uk": "ashrae_80"
+    },
+    "models": {
+      "ashrae_80": {
+        "m": 0.31,
+        "c": 17.8,
+        "delta": 3.5,
+        "ashrae": true
+      },
+      "ashrae_90": {
+        "m": 0.31,
+        "c": 17.8,
+        "delta": 2.5,
+        "ashrae": true
+      },
+      "rh_gt_60": {
+        "m": 0.53,
+        "c": 12.85,
+        "delta": 2.84
+      },
+      "rh_40_60": {
+        "m": 0.53,
+        "c": 14.16,
+        "delta": 3.7
+      },
+      "rh_le_40": {
+        "m": 0.52,
+        "c": 15.23,
+        "delta": 4.4
+      }
+    },
+    "airSpeedDt": {
+      "0.3": 0,
+      "0.6": 1.2,
+      "0.9": 1.8,
+      "1.2": 2.2
+    },
+    "airSpeedGateC": 25
+  },
+  "seasons": {
+    "_note": "Per region. monthIdx maps each calendar month (Jan..Dec) to a season index; a season may occupy more than one block of the year. months are inclusive, 0-based month ranges; midpoints are month-scale x positions; bounds/boundsShort are the boundary markers drawn on charts.",
+    "tz": {
+      "monthIdx": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3
+      ],
+      "labels": [
+        "Kiangazi (Jan-Feb)",
+        "Masika (Mar-May)",
+        "Kiangazi (Jun-Oct)",
+        "Vuli (Nov-Dec)"
+      ],
+      "labelsSw": [
+        "Kiangazi (Jan-Feb)",
+        "Masika (Mac-Mei)",
+        "Kiangazi (Jun-Okt)",
+        "Vuli (Nov-Des)"
+      ],
+      "short": [
+        "Kiangazi-JanFeb",
+        "Masika-MarMay",
+        "Kiangazi-JunOct",
+        "Vuli-NovDec"
+      ],
+      "months": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          5,
+          9
+        ],
+        [
+          10,
+          11
+        ]
+      ],
+      "midpoints": [
+        0.5,
+        3,
+        7,
+        10.5
+      ],
+      "bounds": [
+        {
+          "month": 1,
+          "name": "January Dry Season (Kiangazi)"
+        },
+        {
+          "month": 3,
+          "name": "Long Rains (Masika)"
+        },
+        {
+          "month": 6,
+          "name": "June Dry Season (Kiangazi)"
+        },
+        {
+          "month": 11,
+          "name": "Short Rains (Vuli)"
+        }
+      ],
+      "boundsShort": [
+        {
+          "month": 1,
+          "name": "Kiangazi"
+        },
+        {
+          "month": 3,
+          "name": "Masika"
+        },
+        {
+          "month": 6,
+          "name": "Kiangazi"
+        },
+        {
+          "month": 11,
+          "name": "Vuli"
+        }
+      ]
+    },
+    "uk": {
+      "monthIdx": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        4
+      ],
+      "labels": [
+        "Winter (Jan-Feb)",
+        "Spring (Mar-May)",
+        "Summer (Jun-Aug)",
+        "Autumn (Sep-Nov)",
+        "Winter (Dec)"
+      ],
+      "labelsSw": [
+        "Majira ya Baridi (Jan-Feb)",
+        "Majira ya Kuchipua (Mac-Mei)",
+        "Majira ya Joto (Jun-Ago)",
+        "Majira ya Vuli (Sep-Nov)",
+        "Majira ya Baridi (Des)"
+      ],
+      "short": [
+        "Winter-JanFeb",
+        "Spring-MarMay",
+        "Summer-JunAug",
+        "Autumn-SepNov",
+        "Winter-Dec"
+      ],
+      "months": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          8,
+          10
+        ],
+        [
+          11,
+          11
+        ]
+      ],
+      "midpoints": [
+        0.5,
+        3,
+        6,
+        9,
+        11
+      ],
+      "bounds": [
+        {
+          "month": 3,
+          "name": "Spring"
+        },
+        {
+          "month": 6,
+          "name": "Summer"
+        },
+        {
+          "month": 9,
+          "name": "Autumn"
+        },
+        {
+          "month": 12,
+          "name": "Winter"
+        }
+      ],
+      "boundsShort": [
+        {
+          "month": 3,
+          "name": "Spring"
+        },
+        {
+          "month": 6,
+          "name": "Summer"
+        },
+        {
+          "month": 9,
+          "name": "Autumn"
+        },
+        {
+          "month": 12,
+          "name": "Winter"
+        }
+      ]
+    }
+  },
+  "infoTexts": {
+    "_note": "HTML is allowed (links, <b>). English (en) and Kiswahili (sw); every key must exist in both.",
+    "en": {
+      "infoComfort": "Plots room temperature against recent outdoor conditions to show whether a building is keeping occupants comfortable without mechanical cooling. Points inside the green band are within the adaptive comfort zone for the selected humidity model.",
+      "infoComfortBand": "The green band shows the range of indoor temperatures considered comfortable, based on the ASHRAE-55 adaptive comfort standard. The default model ignores humidity, which can overestimate overheating by around 30%. The Vellei et al. options use <a href=\"https://doi.org/10.1016/j.buildenv.2017.08.005\" target=\"_blank\" style=\"color:#6a9fd8\">humidity-aware comfort bands</a> derived from global field study data, better reflecting how people adapt in humid climates. <a href=\"https://actionresearchprojects.net/explainers/adaptive-comfort\" target=\"_blank\" style=\"color:#6a9fd8\">Read more →</a>",
+      "infoRunningMean": "The running mean is an exponentially weighted average of past outdoor temperatures, where recent days count most. It captures how people acclimatise to changing weather: when outdoor temperatures have been high, occupants can tolerate higher indoor temperatures. <a href=\"https://actionresearchprojects.net/explainers/running-mean\" target=\"_blank\" style=\"color:#6a9fd8\">Read more →</a>",
+      "infoAirSpeed": "ASHRAE 55 Table 5-13 allows a higher indoor temperature to count as comfortable when air is moving: +1.2°C at 0.6 m/s, +1.8°C at 0.9 m/s, +2.2°C at 1.2 m/s. It raises the top of the band only, and only above 25°C, which is why the boundary steps up part-way along. <b>This is an assumed value, not a measurement</b> - no air speed is recorded at these sites. Treat it as a scenario. The dotted green line shows where the upper limit would sit without the allowance, so the size of the adjustment stays visible. Note also that the Vellei et al. bands come from buildings where occupants were already using fans, so that benefit may already be counted once; layering this adjustment on top of them risks counting it twice.",
+      "comfortApplicability": "Method is applicable only for occupant-controlled naturally conditioned spaces that meet all of the following criteria: (a) There is no mechanical cooling system installed. No heating system is in operation; (b) Metabolic rates ranging from 1.0 to 1.5 met; and (c) Occupants are free to adapt their clothing to the indoor and/or outdoor thermal conditions within a range at least as wide as 0.5-1.0 clo.",
+      "comfortOutsideRangeNote": "% of points (grey) fall outside the validated {min}-{max}°C running mean and are excluded from the statistics.",
+      "comfortHeatingNote": "ASHRAE 55 also requires that no heating is in operation. Heating status is not recorded at this site, so that criterion cannot be verified - readings taken while heating was on cannot be identified.",
+      "comfortNoneInRange": "No readings fall inside ASHRAE 55's validated range"
+    },
+    "sw": {
+      "infoComfort": "Inaonyesha joto la chumba dhidi ya hali ya hewa ya nje ili kuona kama jengo linaweka wenyeji katika hali nzuri bila baridi ya mitambo. Alama ndani ya bendi ya kijani ziko ndani ya eneo la starehe.",
+      "infoComfortBand": "Bendi ya kijani inaonyesha kiwango cha joto la ndani kinachochukuliwa kuwa na starehe, kulingana na kiwango cha ASHRAE-55. Mtindo wa kawaida unapuuza unyevunyevu, ambao unaweza kukadiri kupita kiasi kwa karibu 30%. Chaguo za Vellei et al. zinatumia <a href=\"https://doi.org/10.1016/j.buildenv.2017.08.005\" target=\"_blank\" style=\"color:#6a9fd8\">bendi za starehe zinazozingatia unyevunyevu</a> kutoka data ya utafiti wa kimataifa. <a href=\"https://actionresearchprojects.net/explainers/adaptive-comfort\" target=\"_blank\" style=\"color:#6a9fd8\">Soma zaidi →</a>",
+      "infoRunningMean": "Wastani unaoendelea ni wastani uliopimwa kwa uzito zaidi kwa siku za hivi karibuni za joto la nje. Unaonyesha jinsi watu wanavyozoea hali ya hewa: joto la nje likiwa juu, wenyeji wanastahimili joto zaidi ndani, hivyo bendi ya starehe inasogea kulia. <a href=\"https://actionresearchprojects.net/explainers/running-mean\" target=\"_blank\" style=\"color:#6a9fd8\">Soma zaidi →</a>",
+      "infoAirSpeed": "Jedwali 5-13 la ASHRAE 55 linaruhusu joto la ndani la juu zaidi kuhesabiwa kuwa la starehe wakati hewa inatembea: +1.2°C kwa 0.6 m/s, +1.8°C kwa 0.9 m/s, +2.2°C kwa 1.2 m/s. Inainua sehemu ya juu ya bendi pekee, na tu zaidi ya 25°C, ndiyo maana mpaka unapanda ghafla katikati. <b>Hii ni thamani inayodhaniwa, si kipimo</b> - hakuna kasi ya hewa inayorekodiwa katika maeneo haya. Ichukulie kama hali ya kudhania. Mstari wa nukta wa kijani unaonyesha mahali ambapo kikomo cha juu kingekuwa bila ruhusa hiyo, ili ukubwa wa marekebisho uonekane. Pia kumbuka kwamba bendi za Vellei et al. zinatoka kwenye majengo ambapo wakaaji walikuwa tayari wanatumia feni, hivyo faida hiyo inaweza kuwa tayari imehesabiwa mara moja; kuongeza marekebisho haya juu yake kunaweza kuihesabu mara mbili.",
+      "comfortApplicability": "Njia hii inatumika tu kwa nafasi zinazopitisha hewa kiasili na kudhibitiwa na wakaaji, zinazokidhi vigezo vyote vifuatavyo: (a) Hakuna mfumo wa kupoza wa mitambo uliowekwa. Hakuna mfumo wa kupasha joto unaofanya kazi; (b) Viwango vya kimetaboliki kati ya 1.0 na 1.5 met; na (c) Wakaaji wana uhuru wa kubadilisha mavazi yao kulingana na hali ya joto ya ndani na/au ya nje ndani ya kiwango kisichopungua 0.5-1.0 clo.",
+      "comfortOutsideRangeNote": "% ya alama (kijivu) ziko nje ya wastani ulioidhinishwa wa {min}-{max}°C na hazihesabiwi katika takwimu.",
+      "comfortHeatingNote": "ASHRAE 55 pia inahitaji kuwa hakuna joto linalotumika. Hali ya joto haijarekodiwa katika jengo hili, hivyo kigezo hicho hakiwezi kuthibitishwa.",
+      "comfortNoneInRange": "Hakuna visomo ndani ya kiwango kilichothibitishwa cha ASHRAE 55"
+    }
+  }
+}

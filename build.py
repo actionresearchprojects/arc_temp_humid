@@ -103,51 +103,76 @@ GROVE_SENSORS = {"1C290049", "169502D1"}
 HOLYWELL_SENSORS = {"19550131", "0E3C12EC"}
 
 
+# ── Shared comfort file ──────────────────────────────────────────────────────
+# comfort_method.json is the single definition of the adaptive-comfort method,
+# each region's seasons and the comfort explanation texts. ARC Pattern Lab keeps a
+# read-only copy and never edits it: every change is made here first. This file
+# used to hold these as constants (seasons were even written out twice, once in
+# Python and once in the JS template); both now come from the one file.
+COMFORT_METHOD_FILE = Path("comfort_method.json")
+
+_SEASON_FIELDS = ("monthIdx", "labels", "labelsSw", "short", "months",
+                  "midpoints", "bounds", "boundsShort")
+
+
+def _strip_notes(d):
+    """Drop '_note'-style keys, which exist only to document the JSON."""
+    return {k: v for k, v in d.items() if not k.startswith("_")}
+
+
+def load_comfort_method(path=COMFORT_METHOD_FILE):
+    """Read and sanity-check the shared comfort file, failing loudly rather than
+    letting a typo ship a silently wrong dashboard."""
+    if not path.exists():
+        sys.exit(f"ERROR: {path} not found. It is the shared comfort definition "
+                 f"and build.py cannot run without it.")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    method = _strip_notes(raw["method"])
+    seasons = _strip_notes(raw["seasons"])
+    info = {lang: raw["infoTexts"][lang] for lang in ("en", "sw")}
+
+    for key in ("runningMeanAlpha", "tpmaRange", "defaultModelByRegion",
+                "models", "airSpeedDt", "airSpeedGateC"):
+        if key not in method:
+            sys.exit(f"ERROR: {path}: method.{key} is missing")
+    for region, model in method["defaultModelByRegion"].items():
+        if model not in method["models"]:
+            sys.exit(f"ERROR: {path}: default model '{model}' for region "
+                     f"'{region}' is not in method.models")
+    for name, sc in seasons.items():
+        missing = [f for f in _SEASON_FIELDS if f not in sc]
+        if missing:
+            sys.exit(f"ERROR: {path}: seasons.{name} is missing {missing}")
+        if len(sc["monthIdx"]) != 12:
+            sys.exit(f"ERROR: {path}: seasons.{name}.monthIdx must have 12 entries")
+        n = len(sc["labels"])
+        for f in ("labelsSw", "short", "months", "midpoints"):
+            if len(sc[f]) != n:
+                sys.exit(f"ERROR: {path}: seasons.{name}.{f} has {len(sc[f])} "
+                         f"entries but there are {n} season labels")
+    if set(info["en"]) != set(info["sw"]):
+        diff = sorted(set(info["en"]) ^ set(info["sw"]))
+        sys.exit(f"ERROR: {path}: infoTexts en/sw keys differ: {diff}")
+    return {"method": method, "seasons": seasons, "infoTexts": info}
+
+
+COMFORT = load_comfort_method()
+
+
+def js_literal(obj):
+    """JSON for embedding in the HTML template. '</' is escaped so a text can
+    never close the surrounding <script> block."""
+    return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+
+
 # ── Season schemes ────────────────────────────────────────────────────────────
-# Seasons are per-region. Each scheme maps every calendar month to a season
-# index; a season may occupy more than one block of the year (both schemes have
-# one that does), so indices are not in month order and there may be more than
-# four of them. Every block must be a contiguous run of months within a single
-# calendar year - the period selector derives a season's date range from
+# Seasons are per-region and defined in comfort_method.json. Each scheme maps
+# every calendar month to a season index; a season may occupy more than one
+# block of the year, so indices are not in month order and there may be more
+# than four of them. Every block must be a contiguous run of months within a
+# single calendar year - the period selector derives a season's date range from
 # "months", and the charts position seasons on a month-scale axis.
-SEASON_SCHEMES = {
-    "tz": {
-        # 0=Kiangazi(Jan-Feb) 1=Masika(Mar-May) 2=Kiangazi(Jun-Oct) 3=Vuli(Nov-Dec)
-        "monthIdx": [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3],
-        "labels": ["Kiangazi (Jan-Feb)", "Masika (Mar-May)",
-                   "Kiangazi (Jun-Oct)", "Vuli (Nov-Dec)"],
-        "labelsSw": ["Kiangazi (Jan-Feb)", "Masika (Mac-Mei)",
-                     "Kiangazi (Jun-Okt)", "Vuli (Nov-Des)"],
-        "short": ["Kiangazi-JanFeb", "Masika-MarMay", "Kiangazi-JunOct", "Vuli-NovDec"],
-        "months": [[0, 1], [2, 4], [5, 9], [10, 11]],   # inclusive month ranges, 0-based
-        "midpoints": [0.5, 3, 7, 10.5],                 # month-scale x positions
-        # Boundary markers drawn on the line chart and periodic averages
-        "bounds": [{"month": 1, "name": "January Dry Season (Kiangazi)"},
-                   {"month": 3, "name": "Long Rains (Masika)"},
-                   {"month": 6, "name": "June Dry Season (Kiangazi)"},
-                   {"month": 11, "name": "Short Rains (Vuli)"}],
-        "boundsShort": [{"month": 1, "name": "Kiangazi"}, {"month": 3, "name": "Masika"},
-                        {"month": 6, "name": "Kiangazi"}, {"month": 11, "name": "Vuli"}],
-    },
-    "uk": {
-        # Meteorological seasons. Winter straddles the new year, so - exactly as
-        # Kiangazi does above - it occupies two blocks: Jan-Feb and Dec.
-        # 0=Winter(Jan-Feb) 1=Spring(Mar-May) 2=Summer(Jun-Aug) 3=Autumn(Sep-Nov) 4=Winter(Dec)
-        "monthIdx": [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4],
-        "labels": ["Winter (Jan-Feb)", "Spring (Mar-May)", "Summer (Jun-Aug)",
-                   "Autumn (Sep-Nov)", "Winter (Dec)"],
-        "labelsSw": ["Majira ya Baridi (Jan-Feb)", "Majira ya Kuchipua (Mac-Mei)",
-                     "Majira ya Joto (Jun-Ago)", "Majira ya Vuli (Sep-Nov)",
-                     "Majira ya Baridi (Des)"],
-        "short": ["Winter-JanFeb", "Spring-MarMay", "Summer-JunAug", "Autumn-SepNov", "Winter-Dec"],
-        "months": [[0, 1], [2, 4], [5, 7], [8, 10], [11, 11]],
-        "midpoints": [0.5, 3, 6, 9, 11],
-        "bounds": [{"month": 3, "name": "Spring"}, {"month": 6, "name": "Summer"},
-                   {"month": 9, "name": "Autumn"}, {"month": 12, "name": "Winter"}],
-        "boundsShort": [{"month": 3, "name": "Spring"}, {"month": 6, "name": "Summer"},
-                        {"month": 9, "name": "Autumn"}, {"month": 12, "name": "Winter"}],
-    },
-}
+SEASON_SCHEMES = COMFORT["seasons"]
 
 
 # The Open-Meteo feed covers one location, Dar es Salaam (see fetch_openmeteo.py
@@ -174,8 +199,8 @@ OPENMETEO_FEED_TZ = {
 # the running mean at the cool end of the range, where UK data sits. So the UK
 # defaults to ASHRAE 55's 80% acceptability band, which is the compliance limit
 # and the figure to quote. Either default is still user-selectable per session.
-COMFORT_MODEL_TZ = "rh_gt_60"
-COMFORT_MODEL_UK = "ashrae_80"
+COMFORT_MODEL_TZ = COMFORT["method"]["defaultModelByRegion"]["tz"]
+COMFORT_MODEL_UK = COMFORT["method"]["defaultModelByRegion"]["uk"]
 
 # Overheating threshold band drawn on the line, histogram and averages charts.
 # 32-35 C is a Mkuranga heat-stress range; it means nothing against UK data that
@@ -206,8 +231,8 @@ CLIMATE_REGIONS = {
     "uk": {"folder": DATA_FOLDER / "hist_proj_uk", "label": "United Kingdom"},
 }
 
-COMFORT_TPMA_MIN = 10.0
-COMFORT_TPMA_MAX = 33.5
+COMFORT_TPMA_MIN = COMFORT["method"]["tpmaRange"]["min"]
+COMFORT_TPMA_MAX = COMFORT["method"]["tpmaRange"]["max"]
 
 # ASHRAE 55 Section 5.4.1(a) also requires that no heating system is in
 # operation. Unlike the temperature limits, that cannot be checked against the
@@ -1117,7 +1142,8 @@ def load_dataset(key):
 
 
 # ── Running mean ───────────────────────────────────────────────────────────────
-def compute_exponential_running_mean(df, primary_logger, fallback_loggers, alpha=0.8):
+def compute_exponential_running_mean(df, primary_logger, fallback_loggers,
+                                     alpha=COMFORT["method"]["runningMeanAlpha"]):
     """EN16798-1 exponential running mean of daily external temperatures.
     Uses primary_logger for daily means, falling back to fallback_loggers for missing days.
     Returns (hourly_running_mean_series, source_spans) where source_spans is a list of
@@ -2179,8 +2205,12 @@ const state = {
 
 // ── Language / i18n ────────────────────────────────────────────────────────────
 let currentLang = localStorage.getItem('arcLang') || 'en';
+// Comfort-method explanation texts come from comfort_method.json (shared with
+// ARC Pattern Lab); everything else in I18N is dashboard-only.
+const COMFORT_TEXTS = __COMFORT_TEXTS__;
 const I18N = {
   en: {
+    ...COMFORT_TEXTS.en,
     title: 'ARC - Temperature & Humidity Graphs',
     periodSettings: 'Period Settings',
     histogramSettings: 'Histogram Settings',
@@ -2362,7 +2392,6 @@ const I18N = {
     infoLine: 'See how temperature and humidity change over time for each logger. Vertical lines show season boundaries and the red band marks the 32-35\u00b0C heat stress range.',
     infoHistogramStack: 'Shows how often each temperature or humidity level occurs. Useful for spotting where conditions cluster and how rooms compare overall. Normalised so loggers with different sampling rates are comparable. Bars are stacked. Hover to see individual logger values.',
     infoHistogramOverlay: 'Shows how often each temperature or humidity level occurs. Useful for spotting where conditions cluster and how rooms compare overall. Normalised so loggers with different sampling rates are comparable. Bars are overlaid. Hover to see how many loggers share each bin.',
-    infoComfort: 'Plots room temperature against recent outdoor conditions to show whether a building is keeping occupants comfortable without mechanical cooling. Points inside the green band are within the adaptive comfort zone for the selected humidity model.',
     infoPeriodic: 'Reveals typical patterns by averaging readings across a cycle. Use "Day" to see how rooms heat up and cool down over 24 hours, or "Year" for seasonal trends. Climate oscillations (MJO, IOD, ENSO) show how large-scale weather patterns affect local conditions.',
     infoDensity: 'Darker areas = more readings concentrated there. Scale shows % of all plotted points in each region.',
     infoCompare: 'Compare different time periods on the same chart to see how conditions have changed, e.g. this month vs last month, or dry season vs wet season. Each set can have its own loggers and date range.',
@@ -2371,8 +2400,6 @@ const I18N = {
     wetBulbSuffix: '(Wet bulb)',
     wetBulbHover: 'Wet bulb (Tw)',
     infoWetBulb: 'Wet bulb temperature (Tw) is the lowest temperature achievable by evaporative cooling, a key heat stress indicator. When Tw exceeds 32°C, cooling by sweating becomes difficult; above 35°C it is dangerous for prolonged exposure. Calculated using the Stull (2011) approximation, accurate to ±0.3°C in tropical conditions. Valid range: -20 to 50°C and 5-99% RH. Readings below 5% RH are shown as gaps; readings above 99% RH (sensor saturation) are clamped to 99% before calculating. Shown as a dashed line in the same colour as the parent sensor.',
-    infoComfortBand: 'The green band shows the range of indoor temperatures considered comfortable, based on the ASHRAE-55 adaptive comfort standard. The default model ignores humidity, which can overestimate overheating by around 30%. The Vellei et al. options use <a href="https://doi.org/10.1016/j.buildenv.2017.08.005" target="_blank" style="color:#6a9fd8">humidity-aware comfort bands</a> derived from global field study data, better reflecting how people adapt in humid climates. <a href="https://actionresearchprojects.net/explainers/adaptive-comfort" target="_blank" style="color:#6a9fd8">Read more →</a>',
-    infoRunningMean: 'The running mean is an exponentially weighted average of past outdoor temperatures, where recent days count most. It captures how people acclimatise to changing weather: when outdoor temperatures have been high, occupants can tolerate higher indoor temperatures. <a href="https://actionresearchprojects.net/explainers/running-mean" target="_blank" style="color:#6a9fd8">Read more →</a>',
     // Wet bulb checkbox label
     wetBulbLabel: 'Wet Bulb (Tw)',
     // Comfort model dropdown
@@ -2380,18 +2407,13 @@ const I18N = {
     comfortModelAshrae90: 'ASHRAE 55 - 90% acceptability',
     comfortModelNone: 'No comfort band',
     thresholdWord: 'Threshold',
-    comfortNoneInRange: "No readings fall inside ASHRAE 55's validated range",
-    comfortOutsideRangeNote: '% of points (grey) fall outside the validated {min}-{max}\u00b0C running mean and are excluded from the statistics.',
-    comfortHeatingNote: 'ASHRAE 55 also requires that no heating is in operation. Heating status is not recorded at this site, so that criterion cannot be verified - readings taken while heating was on cannot be identified.',
     showBothBands: 'Show both 80% and 90% bands',
     airSpeedLabel: 'Air speed',
     airSpeedGateLabel: 'Air speed allowance applies above 25°C',
-    infoAirSpeed: 'ASHRAE 55 Table 5-13 allows a higher indoor temperature to count as comfortable when air is moving: +1.2°C at 0.6 m/s, +1.8°C at 0.9 m/s, +2.2°C at 1.2 m/s. It raises the top of the band only, and only above 25°C, which is why the boundary steps up part-way along. <b>This is an assumed value, not a measurement</b> - no air speed is recorded at these sites. Treat it as a scenario. The dotted green line shows where the upper limit would sit without the allowance, so the size of the adjustment stays visible. Note also that the Vellei et al. bands come from buildings where occupants were already using fans, so that benefit may already be counted once; layering this adjustment on top of them risks counting it twice.',
     // Applicability limits of the adaptive comfort method (ASHRAE 55 / EN 16798-1).
     // Shown wherever adaptive comfort is presented or explained, because the
     // method is only valid for buildings meeting all three conditions.
     comfortApplicabilityLabel: 'Applicability',
-    comfortApplicability: 'Method is applicable only for occupant-controlled naturally conditioned spaces that meet all of the following criteria: (a) There is no mechanical cooling system installed. No heating system is in operation; (b) Metabolic rates ranging from 1.0 to 1.5 met; and (c) Occupants are free to adapt their clothing to the indoor and/or outdoor thermal conditions within a range at least as wide as 0.5-1.0 clo.',
     // External data warning
     extDataWarningPre: 'Open-Meteo external temperature data only covers to',
     extDataWarningPost: '. Update <code>open-meteo</code> CSV to see adaptive comfort for recent dates.',
@@ -2424,6 +2446,7 @@ const I18N = {
     phaseENSO: 'Phase (Niño/Niña/Neutral)',
   },
   sw: {
+    ...COMFORT_TEXTS.sw,
     title: 'ARC - Grafu za Joto na Unyevunyevu',
     periodSettings: 'Mipangilio ya Kipindi',
     histogramSettings: 'Mipangilio ya Histogramu',
@@ -2594,7 +2617,6 @@ const I18N = {
     infoLine: 'Angalia jinsi joto na unyevunyevu unavyobadilika kwa kila sensor. Mistari ya wima inaonyesha mipaka ya misimu na bendi nyekundu inaonyesha kiwango cha joto hatari cha 32-35\u00b0C.',
     infoHistogramStack: 'Inaonyesha ni mara ngapi kiwango fulani cha joto au unyevunyevu kinatokea. Inasaidia kuona hali za kawaida na kulinganisha vyumba. Baa zimepangwa. Elekeza ili kuona thamani za kila sensor.',
     infoHistogramOverlay: 'Inaonyesha ni mara ngapi kiwango fulani cha joto au unyevunyevu kinatokea. Inasaidia kuona hali za kawaida na kulinganisha vyumba. Baa zimeingizwa juu ya nyingine. Elekeza ili kuona ni sensors ngapi zinashiriki kila bin.',
-    infoComfort: 'Inaonyesha joto la chumba dhidi ya hali ya hewa ya nje ili kuona kama jengo linaweka wenyeji katika hali nzuri bila baridi ya mitambo. Alama ndani ya bendi ya kijani ziko ndani ya eneo la starehe.',
     infoPeriodic: 'Inaonyesha mifumo ya kawaida kwa kupata wastani wa masomo. Tumia "Siku" kuona jinsi vyumba vinavyopata joto na baridi kwa saa 24, au "Mwaka" kwa mwenendo wa misimu.',
     infoDensity: 'Maeneo meusi = masomo mengi yamejilimbikizia hapo. Kipimo kinaonyesha % ya alama zote zilizochorwa katika kila eneo.',
     infoCompare: 'Linganisha vipindi tofauti vya wakati kwenye chati moja ili kuona jinsi hali zilivyobadilika, k.m. mwezi huu dhidi ya mwezi uliopita, au kiangazi dhidi ya masika. Kila seti inaweza kuwa na sensors na tarehe zake.',
@@ -2603,22 +2625,15 @@ const I18N = {
     wetBulbSuffix: '(Joto la mvua)',
     wetBulbHover: 'Joto la mvua (Tw)',
     infoWetBulb: 'Joto la mvua (Tw) ni joto la chini kabisa linaloweza kufikiwa kwa kupoa kwa uvukizi, kiashiria muhimu cha msongo wa joto. Imehesabiwa kwa kutumia mkaribisho wa Stull (2011). Masafa halali: -20 hadi 50°C na 5-99% RH. Maadili chini ya 5% RH yanaonyeshwa kama mapengo; maadili zaidi ya 99% RH (kipimo kikifikia kikomo chake) yanafupishwa hadi 99% kabla ya kuhesabu. Inaonyeshwa kama mstari wa nukta katika rangi ile ile ya sensor.',
-    infoComfortBand: 'Bendi ya kijani inaonyesha kiwango cha joto la ndani kinachochukuliwa kuwa na starehe, kulingana na kiwango cha ASHRAE-55. Mtindo wa kawaida unapuuza unyevunyevu, ambao unaweza kukadiri kupita kiasi kwa karibu 30%. Chaguo za Vellei et al. zinatumia <a href="https://doi.org/10.1016/j.buildenv.2017.08.005" target="_blank" style="color:#6a9fd8">bendi za starehe zinazozingatia unyevunyevu</a> kutoka data ya utafiti wa kimataifa. <a href="https://actionresearchprojects.net/explainers/adaptive-comfort" target="_blank" style="color:#6a9fd8">Soma zaidi →</a>',
-    infoRunningMean: 'Wastani unaoendelea ni wastani uliopimwa kwa uzito zaidi kwa siku za hivi karibuni za joto la nje. Unaonyesha jinsi watu wanavyozoea hali ya hewa: joto la nje likiwa juu, wenyeji wanastahimili joto zaidi ndani, hivyo bendi ya starehe inasogea kulia. <a href="https://actionresearchprojects.net/explainers/running-mean" target="_blank" style="color:#6a9fd8">Soma zaidi →</a>',
     wetBulbLabel: 'Joto la Mvua (Tw)',
     comfortModelAshrae80: 'ASHRAE 55 - ukubalifu 80%',
     comfortModelAshrae90: 'ASHRAE 55 - ukubalifu 90%',
     comfortModelNone: 'Bila bendi ya starehe',
     thresholdWord: 'Kiwango',
-    comfortNoneInRange: 'Hakuna visomo ndani ya kiwango kilichothibitishwa cha ASHRAE 55',
-    comfortOutsideRangeNote: '% ya alama (kijivu) ziko nje ya wastani ulioidhinishwa wa {min}-{max}\u00b0C na hazihesabiwi katika takwimu.',
-    comfortHeatingNote: 'ASHRAE 55 pia inahitaji kuwa hakuna joto linalotumika. Hali ya joto haijarekodiwa katika jengo hili, hivyo kigezo hicho hakiwezi kuthibitishwa.',
     showBothBands: 'Onyesha bendi zote mbili za 80% na 90%',
     airSpeedLabel: 'Kasi ya hewa',
     airSpeedGateLabel: 'Ruhusa ya kasi ya hewa inatumika zaidi ya 25°C',
-    infoAirSpeed: 'Jedwali 5-13 la ASHRAE 55 linaruhusu joto la ndani la juu zaidi kuhesabiwa kuwa la starehe wakati hewa inatembea: +1.2°C kwa 0.6 m/s, +1.8°C kwa 0.9 m/s, +2.2°C kwa 1.2 m/s. Inainua sehemu ya juu ya bendi pekee, na tu zaidi ya 25°C, ndiyo maana mpaka unapanda ghafla katikati. <b>Hii ni thamani inayodhaniwa, si kipimo</b> - hakuna kasi ya hewa inayorekodiwa katika maeneo haya. Ichukulie kama hali ya kudhania. Mstari wa nukta wa kijani unaonyesha mahali ambapo kikomo cha juu kingekuwa bila ruhusa hiyo, ili ukubwa wa marekebisho uonekane. Pia kumbuka kwamba bendi za Vellei et al. zinatoka kwenye majengo ambapo wakaaji walikuwa tayari wanatumia feni, hivyo faida hiyo inaweza kuwa tayari imehesabiwa mara moja; kuongeza marekebisho haya juu yake kunaweza kuihesabu mara mbili.',
     comfortApplicabilityLabel: 'Matumizi',
-    comfortApplicability: 'Njia hii inatumika tu kwa nafasi zinazopitisha hewa kiasili na kudhibitiwa na wakaaji, zinazokidhi vigezo vyote vifuatavyo: (a) Hakuna mfumo wa kupoza wa mitambo uliowekwa. Hakuna mfumo wa kupasha joto unaofanya kazi; (b) Viwango vya kimetaboliki kati ya 1.0 na 1.5 met; na (c) Wakaaji wana uhuru wa kubadilisha mavazi yao kulingana na hali ya joto ya ndani na/au ya nje ndani ya kiwango kisichopungua 0.5-1.0 clo.',
     extDataWarningPre: 'Data ya joto la nje ya Open-Meteo inafika hadi',
     extDataWarningPost: '. Sasisha CSV ya <code>open-meteo</code> kuona faraja ya kubadilika kwa tarehe za hivi karibuni.',
     longTermNotePre: 'Data ya kihistoria ya muda mrefu na makadirio ya baadaye yamezalishwa kutoka',
@@ -5988,22 +6003,16 @@ function getSeasonBoundaries(startMs, endMs) {
 // percentages; 80% acceptability is applied upstream, by discarding grid bins
 // where fewer than 80% of votes were neutral. There is no 90% variant to offer,
 // so the nested-band toggle is limited to the ASHRAE models.
-const COMFORT_MODELS = {
-  ashrae_80: {m:0.31, c:17.8,  delta:3.5,  ashrae:true},
-  ashrae_90: {m:0.31, c:17.8,  delta:2.5,  ashrae:true},
-  rh_gt_60:  {m:0.53, c:12.85, delta:2.84},
-  rh_40_60:  {m:0.53, c:14.16, delta:3.70},
-  rh_le_40:  {m:0.52, c:15.23, delta:4.40},
-};
+const COMFORT_MODELS = __COMFORT_MODELS__;
 
 // ASHRAE 55-2020 Table 5-13: increase in the acceptable upper operative
 // temperature limit produced by raising air speed above the 0.3 m/s baseline.
 // Discrete by design -- the standard gives no basis for interpolating.
-const AIR_SPEED_DT = {'0.3': 0, '0.6': 1.2, '0.9': 1.8, '1.2': 2.2};
+const AIR_SPEED_DT = __AIR_SPEED_DT__;
 
 // Section 5.4.2.4 gates the air speed allowance on operative temperature above
 // this threshold, which is what produces the step in the upper boundary.
-const AIR_SPEED_GATE_C = 25;
+const AIR_SPEED_GATE_C = __AIR_SPEED_GATE_C__;
 
 // Overheating threshold band for the current region, or null where none is
 // defined. 32-35 C is a Mkuranga heat-stress range and means nothing elsewhere.
@@ -6238,34 +6247,7 @@ function toLocalString(ms) {
 // Seasons are regional. A scheme maps every month to a season index; a season
 // may occupy more than one block of the year (Kiangazi and UK winter both do),
 // so there may be more or fewer than four and they are not in month order.
-const SEASON_SCHEMES = {
-  tz: {
-    monthIdx: [0,0,1,1,1,2,2,2,2,2,3,3],
-    labels: ['Kiangazi (Jan-Feb)','Masika (Mar-May)','Kiangazi (Jun-Oct)','Vuli (Nov-Dec)'],
-    labelsSw: ['Kiangazi (Jan-Feb)','Masika (Mac-Mei)','Kiangazi (Jun-Okt)','Vuli (Nov-Des)'],
-    short: ['Kiangazi-JanFeb','Masika-MarMay','Kiangazi-JunOct','Vuli-NovDec'],
-    months: [[0,1],[2,4],[5,9],[10,11]],
-    midpoints: [0.5, 3, 7, 10.5],
-    bounds: [{month:1, name:'January Dry Season (Kiangazi)'},
-             {month:3, name:'Long Rains (Masika)'},
-             {month:6, name:'June Dry Season (Kiangazi)'},
-             {month:11, name:'Short Rains (Vuli)'}],
-    boundsShort: [{month:1, name:'Kiangazi'},{month:3, name:'Masika'},
-                  {month:6, name:'Kiangazi'},{month:11, name:'Vuli'}],
-  },
-  uk: {
-    monthIdx: [0,0,1,1,1,2,2,2,3,3,3,4],
-    labels: ['Winter (Jan-Feb)','Spring (Mar-May)','Summer (Jun-Aug)','Autumn (Sep-Nov)','Winter (Dec)'],
-    labelsSw: ['Majira ya Baridi (Jan-Feb)','Majira ya Kuchipua (Mac-Mei)','Majira ya Joto (Jun-Ago)','Majira ya Vuli (Sep-Nov)','Majira ya Baridi (Des)'],
-    short: ['Winter-JanFeb','Spring-MarMay','Summer-JunAug','Autumn-SepNov','Winter-Dec'],
-    months: [[0,1],[2,4],[5,7],[8,10],[11,11]],
-    midpoints: [0.5, 3, 6, 9, 11],
-    bounds: [{month:3, name:'Spring'},{month:6, name:'Summer'},
-             {month:9, name:'Autumn'},{month:12, name:'Winter'}],
-    boundsShort: [{month:3, name:'Spring'},{month:6, name:'Summer'},
-                  {month:9, name:'Autumn'},{month:12, name:'Winter'}],
-  },
-};
+const SEASON_SCHEMES = __SEASON_SCHEMES__;
 function seasonScheme() {
   const d = (typeof ALL_DATA !== 'undefined' && typeof dataset === 'function') ? dataset() : null;
   return SEASON_SCHEMES[(d && d.meta && d.meta.seasonScheme) || 'tz'];
@@ -9985,6 +9967,11 @@ def main():
     fetch_times_str = json.dumps(fetch_times)
     data_freshness_str = json.dumps(data_freshness)
     html = (HTML_TEMPLATE
+            .replace('__SEASON_SCHEMES__', js_literal(SEASON_SCHEMES))
+            .replace('__COMFORT_MODELS__', js_literal(COMFORT['method']['models']))
+            .replace('__AIR_SPEED_DT__', js_literal(COMFORT['method']['airSpeedDt']))
+            .replace('__AIR_SPEED_GATE_C__', str(COMFORT['method']['airSpeedGateC']))
+            .replace('__COMFORT_TEXTS__', js_literal(COMFORT['infoTexts']))
             .replace('__DATA__', json_str)
             .replace('__HISTORIC__', historic_str)
             .replace('__FETCH_TIMES__', fetch_times_str)
