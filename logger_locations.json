@@ -1,0 +1,443 @@
+{
+ "_readme": [
+  "Master list of logger location codes. A code names a PLACE, not a device: when a logger is moved, add a new period",
+  "for it with the new code and dates; when a logger is replaced at the same spot, the code stays the same.",
+  "Codes are unique within a building (dataset): two buildings can both have BUILDING-INTERIOR-BEDROOM1.",
+  "build.py checks this file and writes data/logger_register.csv, which ARC Pattern Lab's register reads.",
+  "A logger or period with no code reads as 'location not stated' in Pattern Lab.",
+  "Keys beginning with an underscore are notes and are ignored by build.py."
+ ],
+ "version": 1,
+ "grammar": {
+  "_note": "Agreed with Andrew Simmonds 20-11-2026: general to particular, capitals and hyphens, optional height token -H<mm> above ground or floor.",
+  "types": [
+   "WEATHER-STATION",
+   "BUILDING-INTERIOR-<room>",
+   "BUILDING-EXTERIOR-<position>",
+   "BUILDING-ROOFSPACE-<position>",
+   "BUILDING-SURFACE-<element>",
+   "LANDSCAPE-<feature>-<name>"
+  ],
+  "landscapeFeatures": [
+   "OPEN-GROUND",
+   "PAVED",
+   "WATER",
+   "TREE-CANOPY-LIGHT",
+   "TREE-CANOPY-MEDIUM",
+   "TREE-CANOPY-DENSE"
+  ],
+  "status": {
+   "confirmed": "stated by Andy's briefing, the Pattern Lab handover or the Pattern Lab register",
+   "suggested": "proposed from the logger's name or position; to be confirmed. 'suggested' is not exported as the code",
+   "needs-code": "no sensible code yet; position name to agree"
+  }
+ },
+ "loggers": {
+  "house5": {
+   "861011": {
+    "periods": [
+     {
+      "code": null,
+      "status": "needs-code",
+      "from": null,
+      "to": null,
+      "note": "External ambient TinyTag; data after 2024-05-07 are erroneous. Position name to agree."
+     }
+    ]
+   },
+   "320E02D1": {
+    "periods": [
+     {
+      "code": "WEATHER-STATION",
+      "status": "confirmed",
+      "from": "2026-02-17T12:00",
+      "to": null,
+      "note": "Pattern Lab register: weather station air T and RH; reliable from 2026-02-17 12:00 EAT."
+     }
+    ]
+   },
+   "780981": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-LIVINGROOM"
+     }
+    ]
+   },
+   "327601CD": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-LIVINGROOM"
+     }
+    ]
+   },
+   "3276003D": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-KITCHEN"
+     }
+    ]
+   },
+   "639148": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-STUDY"
+     }
+    ]
+   },
+   "3276028A": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-STUDY"
+     }
+    ]
+   },
+   "759522": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM1"
+     }
+    ]
+   },
+   "32760205": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM1-H1000",
+      "note": "Height 1.0 m from the Pattern Lab register."
+     }
+    ]
+   },
+   "759521": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM2"
+     }
+    ]
+   },
+   "327601CB": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM2"
+     }
+    ]
+   },
+   "759209": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM3"
+     }
+    ]
+   },
+   "32760371": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM3"
+     }
+    ]
+   },
+   "759492": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM4"
+     }
+    ]
+   },
+   "3276012B": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM4-H2000",
+      "note": "Height 2.0 m from the Pattern Lab register."
+     }
+    ]
+   },
+   "32760208": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-WASHROOMS"
+     }
+    ]
+   },
+   "759493": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-ROOFSPACE-LIVINGROOM-CEILING",
+      "note": "Above the living room ceiling."
+     }
+    ]
+   },
+   "861968": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-ROOFSPACE-LIVINGROOM-BELOWROOF",
+      "note": "Below the living room metal roof."
+     }
+    ]
+   },
+   "759498": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": "2024-06-01",
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM3-BELOWROOF",
+      "note": "Below the Bedroom 3 metal roof; moved to the Schoolteacher's House about 2024-06-01."
+     }
+    ]
+   },
+   "759519": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM4-BELOWROOF",
+      "note": "Below the Bedroom 4 metal roof."
+     }
+    ]
+   },
+   "32760164": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": "2026-02-17",
+      "to": null,
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM4-CEILING",
+      "note": "Pattern Lab register: ceiling zone, resting on the Bedroom 4 plasterboard."
+     }
+    ]
+   },
+   "32760048_surface": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-SURFACE-ROOFSHEET",
+      "note": "Surface probe on the metal (surface_temp); sensor 32760048, Bedroom 4. Element name to agree."
+     }
+    ]
+   },
+   "32760048": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM4-BELOWROOF",
+      "note": "Sensor body: air just below the metal (the dashboard's 'ambient adjacent surface')."
+     }
+    ]
+   },
+   "759489": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": "2026-10-13T13:53",
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM4-CEILING",
+      "note": "Old position (dashboard name 'Bedroom 4 (above ceiling)'). Dashboard data end 2024-05."
+     },
+     {
+      "code": "BUILDING-EXTERIOR-BEDROOM4-BAY",
+      "status": "confirmed",
+      "from": "2026-10-13T13:53",
+      "to": null,
+      "note": "Pattern Lab register and Andy's briefing: under the Bedroom 4 bay window, 0.75 m above external ground."
+     }
+    ]
+   },
+   "861004": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": "2026-09-21T15:00",
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM3-BELOWINSULATION",
+      "note": "Old position (dashboard name 'Bedroom 3 (above ceiling, below insulation)'). Date approximate. Dashboard data end 2024-05."
+     },
+     {
+      "code": "LANDSCAPE-TREE-CANOPY-MEDIUM-CAUSEWAY",
+      "status": "confirmed",
+      "from": "2026-09-21T15:00",
+      "to": null,
+      "note": "Andy's briefing and Pattern Lab handover: Causeway, medium canopy, logging since 2026-09-21 15:00."
+     }
+    ]
+   },
+   "861034": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": "2026-10-12T13:31",
+      "suggested": "BUILDING-ROOFSPACE-BEDROOM3-ABOVEINSULATION",
+      "note": "Old position (dashboard name 'Bedroom 3 (above ceiling, above insulation)'). Dashboard data end 2024-05."
+     },
+     {
+      "code": "BUILDING-ROOFSPACE-RIDGE",
+      "status": "confirmed",
+      "from": "2026-10-12T13:31",
+      "to": null,
+      "note": "Pattern Lab register and Andy's briefing: ridge air, House 5."
+     }
+    ]
+   },
+   "861027": {
+    "periods": [
+     {
+      "code": "LANDSCAPE-TREE-CANOPY-DENSE-HIMAEAST",
+      "status": "confirmed",
+      "from": "2026-09-21T15:00",
+      "to": null,
+      "note": "Hima East, dense canopy (Andy's briefing). Not yet in the dashboard data."
+     }
+    ]
+   }
+  },
+  "schoolteacher": {
+   "tinytag": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-BEDROOM1",
+      "note": "TinyTag S/N 759498 in the Schoolteacher's House."
+     }
+    ]
+   },
+   "govee": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-LIVINGROOM",
+      "note": "Govee 'Living Space'."
+     }
+    ]
+   }
+  },
+  "grove": {
+   "1C290049": {
+    "periods": [
+     {
+      "code": null,
+      "status": "needs-code",
+      "from": null,
+      "to": null,
+      "note": "External ambient. Position name to agree."
+     }
+    ]
+   },
+   "169502D1": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-LIVINGROOM"
+     }
+    ]
+   }
+  },
+  "holywell": {
+   "19550131": {
+    "periods": [
+     {
+      "code": null,
+      "status": "needs-code",
+      "from": null,
+      "to": null,
+      "note": "External ambient, full shade. Position name to agree."
+     }
+    ]
+   },
+   "0E3C12EC": {
+    "periods": [
+     {
+      "code": null,
+      "status": "suggested",
+      "from": null,
+      "to": null,
+      "suggested": "BUILDING-INTERIOR-LIVINGROOM"
+     }
+    ]
+   }
+  }
+ }
+}

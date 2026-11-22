@@ -165,6 +165,98 @@ def js_literal(obj):
     return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
 
 
+# ── Logger location codes ─────────────────────────────────────────────────────
+# logger_locations.json is the master list of location codes (agreed with Andrew
+# Simmonds 20-11-2026). A code names a place, not a device, so each logger has
+# periods: a moved logger gets a new period with its new code and dates.
+# build.py validates the file and writes data/logger_register.csv, the export
+# that ARC Pattern Lab's logger register reads.
+LOGGER_LOCATIONS_FILE = Path("logger_locations.json")
+LOGGER_REGISTER_CSV = DATA_FOLDER / "logger_register.csv"
+_LOC_NAME = r"[A-Z0-9]+(?:-[A-Z0-9]+)*"
+LOCATION_CODE_RE = re.compile(
+    r"^(?:WEATHER-STATION"
+    r"|BUILDING-(?:INTERIOR|EXTERIOR|ROOFSPACE|SURFACE)-" + _LOC_NAME +
+    r"|LANDSCAPE-(?:OPEN-GROUND|PAVED|WATER|TREE-CANOPY-(?:LIGHT|MEDIUM|DENSE))-" + _LOC_NAME +
+    r")(?:-H\d+)?$")
+LOCATION_STATUSES = ("confirmed", "suggested", "needs-code")
+
+
+def load_logger_locations(path=LOGGER_LOCATIONS_FILE):
+    """Read and check the location-code master list; fail loudly on a bad code."""
+    if not path.exists():
+        sys.exit(f"ERROR: {path} not found (master list of logger location codes).")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    for ds, loggers in raw["loggers"].items():
+        for lid, entry in loggers.items():
+            last_to = None
+            for i, per in enumerate(entry["periods"]):
+                where = f"{path}: {ds}/{lid} period {i + 1}"
+                status, code, sug = per.get("status"), per.get("code"), per.get("suggested")
+                if status not in LOCATION_STATUSES:
+                    sys.exit(f"ERROR: {where}: status must be one of {LOCATION_STATUSES}")
+                if status == "confirmed":
+                    if not code or not LOCATION_CODE_RE.match(code):
+                        sys.exit(f"ERROR: {where}: '{code}' is not a valid location code")
+                elif code is not None:
+                    sys.exit(f"ERROR: {where}: only a confirmed period may carry a code "
+                             f"(put a guess in 'suggested')")
+                if sug is not None and not LOCATION_CODE_RE.match(sug):
+                    sys.exit(f"ERROR: {where}: suggested code '{sug}' is not a valid location code")
+                frm, to = per.get("from"), per.get("to")
+                if frm and to and frm >= to:
+                    sys.exit(f"ERROR: {where}: 'from' must be before 'to'")
+                if frm and last_to and frm < last_to:
+                    sys.exit(f"ERROR: {where}: overlaps the previous period")
+                last_to = to or last_to
+    return raw
+
+
+def write_logger_register(manifest, path=LOGGER_REGISTER_CSV):
+    """Export one row per logger per period. Only confirmed codes go in the
+    location_code column, so a guess can never be read as a fact; a logger with no
+    confirmed code reads as 'location not stated' in Pattern Lab."""
+    import csv
+    locs = load_logger_locations()["loggers"]
+    rows, missing, extra = [], [], []
+    for ds, info in manifest.items():
+        known = locs.get(ds, {})
+        for lg in info["loggers"]:
+            if lg.get("source") == "Open-Meteo":
+                continue
+            entry = known.get(lg["id"])
+            if entry is None:
+                missing.append(f"{ds}/{lg['id']}")
+                periods = [{"status": "missing", "code": None, "from": None, "to": None}]
+            else:
+                periods = entry["periods"]
+            for per in periods:
+                rows.append([ds, lg["id"], lg.get("name", ""), lg.get("source", ""),
+                             lg.get("section", ""), per.get("from") or "", per.get("to") or "",
+                             per.get("code") or "", per.get("status"),
+                             per.get("suggested") or "", per.get("note") or ""])
+    in_manifest = {(ds, lg["id"]) for ds, i in manifest.items() for lg in i["loggers"]}
+    for ds, loggers in locs.items():
+        for lid in loggers:
+            if (ds, lid) not in in_manifest:
+                extra.append(f"{ds}/{lid}")
+                for per in loggers[lid]["periods"]:
+                    rows.append([ds, lid, "(not in the dashboard data)", "", "",
+                                 per.get("from") or "", per.get("to") or "", per.get("code") or "",
+                                 per.get("status"), per.get("suggested") or "", per.get("note") or ""])
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(["dataset", "logger_id", "name", "make", "section", "period_from", "period_to",
+                    "location_code", "code_status", "suggested_code", "note"])
+        w.writerows(rows)
+    confirmed = sum(1 for r in rows if r[8] == "confirmed")
+    print(f"  Saved logger register → {path} ({len(rows)} rows, {confirmed} with a confirmed code)")
+    if missing:
+        print(f"  NOTE: loggers with no entry in {LOGGER_LOCATIONS_FILE}: {', '.join(missing)}")
+    if extra:
+        print(f"  NOTE: in {LOGGER_LOCATIONS_FILE} but not in the dashboard data: {', '.join(extra)}")
+
+
 # ── Season schemes ────────────────────────────────────────────────────────────
 # Seasons are per-region and defined in comfort_method.json. Each scheme maps
 # every calendar month to a season index; a season may occupy more than one
@@ -9990,6 +10082,7 @@ def main():
     loggers_path = DATA_FOLDER / "loggers.json"
     loggers_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"  Saved loggers manifest → {loggers_path}")
+    write_logger_register(manifest)
 
 
 if __name__ == '__main__':

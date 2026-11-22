@@ -1,0 +1,37 @@
+dataset,logger_id,name,make,section,period_from,period_to,location_code,code_status,suggested_code,note
+house5,861011,External Ambient,TinyTag,external,,,,needs-code,,External ambient TinyTag; data after 2024-05-07 are erroneous. Position name to agree.
+house5,320E02D1,Weather Station T&RH,Omnisense,external,2026-02-17T12:00,,WEATHER-STATION,confirmed,,Pattern Lab register: weather station air T and RH; reliable from 2026-02-17 12:00 EAT.
+house5,780981,Living Room,TinyTag,room,,,,suggested,BUILDING-INTERIOR-LIVINGROOM,
+house5,759493,Living Room (above ceiling),TinyTag,structural,,,,suggested,BUILDING-ROOFSPACE-LIVINGROOM-CEILING,Above the living room ceiling.
+house5,861968,Living Room (below metal roof),TinyTag,structural,,,,suggested,BUILDING-ROOFSPACE-LIVINGROOM-BELOWROOF,Below the living room metal roof.
+house5,327601CD,Living Room,Omnisense,room,,,,suggested,BUILDING-INTERIOR-LIVINGROOM,
+house5,3276003D,Kitchen,Omnisense,room,,,,suggested,BUILDING-INTERIOR-KITCHEN,
+house5,639148,Study,TinyTag,room,,,,suggested,BUILDING-INTERIOR-STUDY,
+house5,3276028A,Study,Omnisense,room,,,,suggested,BUILDING-INTERIOR-STUDY,
+house5,759522,Bedroom 1,TinyTag,room,,,,suggested,BUILDING-INTERIOR-BEDROOM1,
+house5,32760205,Bedroom 1,Omnisense,room,,,,suggested,BUILDING-INTERIOR-BEDROOM1-H1000,Height 1.0 m from the Pattern Lab register.
+house5,759521,Bedroom 2,TinyTag,room,,,,suggested,BUILDING-INTERIOR-BEDROOM2,
+house5,327601CB,Bedroom 2,Omnisense,room,,,,suggested,BUILDING-INTERIOR-BEDROOM2,
+house5,759209,Bedroom 3,TinyTag,room,,,,suggested,BUILDING-INTERIOR-BEDROOM3,
+house5,759498,Bedroom 3 (below metal roof),TinyTag,structural,,2024-06-01,,suggested,BUILDING-ROOFSPACE-BEDROOM3-BELOWROOF,Below the Bedroom 3 metal roof; moved to the Schoolteacher's House about 2024-06-01.
+house5,861004,"Bedroom 3 (above ceiling, below insulation)",TinyTag,structural,,2026-09-21T15:00,,suggested,BUILDING-ROOFSPACE-BEDROOM3-BELOWINSULATION,"Old position (dashboard name 'Bedroom 3 (above ceiling, below insulation)'). Date approximate. Dashboard data end 2024-05."
+house5,861004,"Bedroom 3 (above ceiling, below insulation)",TinyTag,structural,2026-09-21T15:00,,LANDSCAPE-TREE-CANOPY-MEDIUM-CAUSEWAY,confirmed,,"Andy's briefing and Pattern Lab handover: Causeway, medium canopy, logging since 2026-09-21 15:00."
+house5,861034,"Bedroom 3 (above ceiling, above insulation)",TinyTag,structural,,2026-10-12T13:31,,suggested,BUILDING-ROOFSPACE-BEDROOM3-ABOVEINSULATION,"Old position (dashboard name 'Bedroom 3 (above ceiling, above insulation)'). Dashboard data end 2024-05."
+house5,861034,"Bedroom 3 (above ceiling, above insulation)",TinyTag,structural,2026-10-12T13:31,,BUILDING-ROOFSPACE-RIDGE,confirmed,,"Pattern Lab register and Andy's briefing: ridge air, House 5."
+house5,32760371,Bedroom 3,Omnisense,room,,,,suggested,BUILDING-INTERIOR-BEDROOM3,
+house5,759492,Bedroom 4,TinyTag,room,,,,suggested,BUILDING-INTERIOR-BEDROOM4,
+house5,759489,Bedroom 4 (above ceiling),TinyTag,structural,,2026-10-13T13:53,,suggested,BUILDING-ROOFSPACE-BEDROOM4-CEILING,Old position (dashboard name 'Bedroom 4 (above ceiling)'). Dashboard data end 2024-05.
+house5,759489,Bedroom 4 (above ceiling),TinyTag,structural,2026-10-13T13:53,,BUILDING-EXTERIOR-BEDROOM4-BAY,confirmed,,"Pattern Lab register and Andy's briefing: under the Bedroom 4 bay window, 0.75 m above external ground."
+house5,759519,Bedroom 4 (below metal roof),TinyTag,structural,,,,suggested,BUILDING-ROOFSPACE-BEDROOM4-BELOWROOF,Below the Bedroom 4 metal roof.
+house5,3276012B,Bedroom 4,Omnisense,room,,,,suggested,BUILDING-INTERIOR-BEDROOM4-H2000,Height 2.0 m from the Pattern Lab register.
+house5,32760164,Bedroom 4 (above ceiling),Omnisense,structural,2026-02-17,,,suggested,BUILDING-ROOFSPACE-BEDROOM4-CEILING,"Pattern Lab register: ceiling zone, resting on the Bedroom 4 plasterboard."
+house5,32760048_surface,Bedroom 4 (below metal roof) – Surface temperature,Omnisense,structural,,,,suggested,BUILDING-SURFACE-ROOFSHEET,"Surface probe on the metal (surface_temp); sensor 32760048, Bedroom 4. Element name to agree."
+house5,32760048,Bedroom 4 (below metal roof) – Ambient adjacent surface,Omnisense,structural,,,,suggested,BUILDING-ROOFSPACE-BEDROOM4-BELOWROOF,Sensor body: air just below the metal (the dashboard's 'ambient adjacent surface').
+house5,32760208,Washrooms area,Omnisense,room,,,,suggested,BUILDING-INTERIOR-WASHROOMS,
+schoolteacher,tinytag,Bedroom 1,TinyTag,room,,,,suggested,BUILDING-INTERIOR-BEDROOM1,TinyTag S/N 759498 in the Schoolteacher's House.
+schoolteacher,govee,Living Space,Govee Smart Hygrometer,room,,,,suggested,BUILDING-INTERIOR-LIVINGROOM,Govee 'Living Space'.
+grove,1C290049,External Ambient,Omnisense,external,,,,needs-code,,External ambient. Position name to agree.
+grove,169502D1,Living Room (No. 57),Omnisense,room,,,,suggested,BUILDING-INTERIOR-LIVINGROOM,
+holywell,19550131,External Ambient (full shade),Omnisense,external,,,,needs-code,,"External ambient, full shade. Position name to agree."
+holywell,0E3C12EC,Living Room,Omnisense,room,,,,suggested,BUILDING-INTERIOR-LIVINGROOM,
+house5,861027,(not in the dashboard data),,,2026-09-21T15:00,,LANDSCAPE-TREE-CANOPY-DENSE-HIMAEAST,confirmed,,"Hima East, dense canopy (Andy's briefing). Not yet in the dashboard data."

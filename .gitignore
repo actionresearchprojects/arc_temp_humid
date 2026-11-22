@@ -13,6 +13,7 @@ data/*
 !data/hist_proj_uk/
 !data/config.json
 !data/loggers.json
+!data/logger_register.csv
 !data/status.json
 
 # Within cycles/, track everything

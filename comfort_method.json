@@ -5,7 +5,7 @@
     "copy and never edits it. Make every change here (website side) first.",
     "Keys beginning with an underscore are notes and are ignored by build.py."
   ],
-  "version": 1,
+  "version": 2,
   "method": {
     "_note": "Running mean follows EN16798-1. Bands: ASHRAE 55 (80%/90%) and Vellei et al. (2017). Window limits are ASHRAE 55 Section 5.4.1(d). Air-speed allowance is ASHRAE 55 Table 5-13, gated by Section 5.4.2.4.",
     "runningMeanAlpha": 0.8,
@@ -55,7 +55,7 @@
     "airSpeedGateC": 25
   },
   "seasons": {
-    "_note": "Per region. monthIdx maps each calendar month (Jan..Dec) to a season index; a season may occupy more than one block of the year. months are inclusive, 0-based month ranges; midpoints are month-scale x positions; bounds/boundsShort are the boundary markers drawn on charts.",
+    "_note": "Per region. monthIdx maps each calendar month (Jan..Dec) to a season index; a season may occupy more than one block of the year. months are inclusive, 0-based month ranges; midpoints are month-scale x positions; bounds/boundsShort are the boundary markers drawn on charts. Tanzania (Kisemvule) seasons agreed 20-11-2026: Kiangazi Jan-Feb, Masika Mar-May, Kipupwe Jun-Sep, Vuli Oct-Dec.",
     "tz": {
       "monthIdx": [
         0,
@@ -67,27 +67,27 @@
         2,
         2,
         2,
-        2,
+        3,
         3,
         3
       ],
       "labels": [
         "Kiangazi (Jan-Feb)",
         "Masika (Mar-May)",
-        "Kiangazi (Jun-Oct)",
-        "Vuli (Nov-Dec)"
+        "Kipupwe (Jun-Sep)",
+        "Vuli (Oct-Dec)"
       ],
       "labelsSw": [
         "Kiangazi (Jan-Feb)",
         "Masika (Mac-Mei)",
-        "Kiangazi (Jun-Okt)",
-        "Vuli (Nov-Des)"
+        "Kipupwe (Jun-Sep)",
+        "Vuli (Okt-Des)"
       ],
       "short": [
         "Kiangazi-JanFeb",
         "Masika-MarMay",
-        "Kiangazi-JunOct",
-        "Vuli-NovDec"
+        "Kipupwe-JunSep",
+        "Vuli-OctDec"
       ],
       "months": [
         [
@@ -100,18 +100,18 @@
         ],
         [
           5,
-          9
+          8
         ],
         [
-          10,
+          9,
           11
         ]
       ],
       "midpoints": [
         0.5,
         3,
-        7,
-        10.5
+        6.5,
+        10
       ],
       "bounds": [
         {
@@ -124,10 +124,10 @@
         },
         {
           "month": 6,
-          "name": "June Dry Season (Kiangazi)"
+          "name": "Cool Season (Kipupwe)"
         },
         {
-          "month": 11,
+          "month": 10,
           "name": "Short Rains (Vuli)"
         }
       ],
@@ -142,10 +142,10 @@
         },
         {
           "month": 6,
-          "name": "Kiangazi"
+          "name": "Kipupwe"
         },
         {
-          "month": 11,
+          "month": 10,
           "name": "Vuli"
         }
       ]
